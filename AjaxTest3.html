@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+	</head>
+
+	<body>
+		<label for="txt_username">
+        姓名:</label>
+		<input type="text" id="txt_username" />
+		<br />
+		<label for="txt_age">
+        年龄:</label>
+		<input type="text" id="txt_age" />
+		<br />
+		<div value="GET" id="btn" onclick="btn_click();">asfs</div>
+		<div id="result">
+		</div>
+	</body>
+
+</html>
+
+
+
+
+
+<!--<script type="text/javascript">
+	function btn_click() {
+		//创建XMLHttpRequest对象
+		var xmlHttp = new XMLHttpRequest();
+//return false;
+		console.log(xmlHttp)
+		//获取值
+		var username = document.getElementById("txt_username").value;
+		var age = document.getElementById("txt_age").value;
+
+		//配置XMLHttpRequest对象
+		xmlHttp.open("post", "aaa.aspx?username=" + username +
+			"&age=" + age);
+
+		//设置回调函数
+		xmlHttp.onreadystatechange = function() {
+			if(xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+				document.getElementById("result").innerHTML = xmlHttp.responseText;
+			}
+		}
+
+		//发送请求
+		xmlHttp.send(null);
+	}
+</script>-->

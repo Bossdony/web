@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Ajax</title>
+		<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+		<style type="text/css">
+			*{
+				margin: 0;
+				padding: 0;
+			}
+			/*body{
+				font-size: 16px;
+			}*/
+			/*img{
+				width: 250px;
+				height: 350px;
+				float: left;
+				margin: 5px;
+			}*/
+			.boo{
+				width: 100%;
+				height: auto;
+				float: left;
+			}
+			.book{
+				width: 80%;
+				height: 200px;
+				margin: 0 auto;				
+				border: 1px solid #000;
+			}
+			.book_images{
+				width: 15%;
+				height: 200px;
+				float: left;
+				border-left: 1px solid #ccc;
+			}
+			.book_img{
+				width: 150px;
+				height: 150px;
+				margin-top:25px;	
+				margin-left: 35px;
+				cursor: pointer;
+				border: 1px solid #ccc;		
+			}
+			.book_mian{
+				width: 80%;
+				height: 200px;
+				float: left;
+				padding-left:20px ;
+				border-left: 1px solid #ccc;
+			}
+			.book_mian span{
+				font-size: 20px;
+			}
+			.book_mian p{
+				font-size: 16px;
+			}
+			.book_div{
+				margin-top: 35px;
+			}
+			.image{
+				width: 100%;
+				height: auto;
+				float: left;
+				margin: 20px 0;
+			}
+			.image h3{
+				width: 100%;
+				height: auto;
+				float: left;
+			}
+			.image_img{
+				width: 250px;
+				height: 380px;
+				float: left;
+				margin: 10px;
+				padding: 5px;				
+				border: 1px solid #ccc;
+			}
+			.image_img img{
+				width: 250px;
+				height: 350px;
+				cursor: pointer;
+			}
+			.image_img p{
+				margin: 5px 0;
+			}
+			
+			table{
+				width: 100%;
+				text-align: center;
+			}
+			table tr{
+				height: 50px;
+			}
+			.city_ct{
+				/*text-align: center;*/
+				width: 450px;
+				/*height: 80px;*/
+				margin: 0 auto;
+				font-size: 20px;
+				padding: 10px 0;
+			}
+			.city_ct input{
+				width: 350px;
+				line-height: 50px;
+				background: #1DC5A3;
+				color: white;
+				font-size: 20px;
+			}
+		</style>
+	</head>
+	<body>		
+        <!--<div class="book">
+        	<div class="book_images"><img class="book_img" src=""/></div>        	
+        	<div class="book_mian">
+        		<div class="book_div">
+        			<span>名称:&nbsp;&nbsp;</span>
+        			<div class="book_zuozhe">
+        				<span style="margin-right: 30px;">作者:&nbsp;&nbsp;</span>
+        				<span>类型:&nbsp;&nbsp;</span>
+        			</div>        			
+        		</div>
+        		<p><span>简介:&nbsp;&nbsp;&nbsp;</span></p>
+        	</div>
+        </div>-->
+        <div class="image">
+        	<!--<h3>美图</h3>-->
+        	<!--<div class="image_img">
+        		<img src="" />
+        		<p>上传时间:&nbsp;&nbsp;</p>
+        	</div>-->
+        </div>
+        <div class="city">
+        	<div class="city_ct">
+	        	<label>城市:</label>
+	        	<input class="ctInput" placeholder="请输入你要查看天气的城市名称" value="" />
+        	</div>
+        	<div class="city_mian">
+    			<table border="1">
+    				<tr>
+    					<th>日期</th>
+    					<th>风力</th>
+    					<th>风向</th>
+    					<th>最高温度</th>        					
+    					<th>最低温度</th>
+    					<th>天气</th>
+    				</tr>    
+    				
+    			</table>
+        	</div>
+        </div>
+	</body>
+</html>
+<script type="text/javascript">
+	$(function(){
+		$(document).ready(function(){
+			
+//			$.ajax({				
+//				url:"https://www.apiopen.top/satinApi?type=1&page=1",
+//				type:"post",
+//				async:false,
+//				dataType:"json",
+//				success: function(res){
+//					console.log(res);
+//				}
+//			});
+			
+			
+			$(".ctInput").on('blur',function(){
+				var ctInput1 = $(".ctInput").val();
+				var tr = $('.city_mian tbody tr');
+//				console.log(ctInput1);				
+				$.ajax({
+					url:"https://www.apiopen.top/weatherApi?city="+ ctInput1,
+					type:"post",
+					async:false,
+					dataType:"json",
+					success: function(data){
+//						console.log(data);
+						var yed = data.data.yesterday;//昨天
+						var day = data.data.forecast;//剩下的天数的数组
+//						console.log(day[0].fengli);
+//						var tr1 = '<tr>'+
+//			    					'<td>'+yed.date+'</td>'+
+//			    					'<td>'+yed.fl+'</td>'+
+//			    					'<td>'+yed.fx+'</td>'+
+//			    					'<td>'+yed.high+'</td>'+
+//			    					'<td>'+yed.low+'</td>'+
+//			    					'<td>'+yed.type+'</td>'+
+//			    					'</tr>';
+//			    		$(tr1).insertAfter(tr);	
+//						for(var i=0;i<day.length;i++){
+//							var tr2 = '<tr>'+
+//			    					'<td>'+day[i].date+'</td>'+
+//			    					'<td>'+day[i].fengli+'</td>'+
+//			    					'<td>'+day[i].fengxiang+'</td>'+
+//			    					'<td>'+day[i].high+'</td>'+
+//			    					'<td>'+day[i].low+'</td>'+
+//			    					'<td>'+day[i].type+'</td>'+
+//			    					'</tr>';
+////			    			$(tr2).insertAfter(tr.eq(i));
+//						}
+//			    			
+					}
+				})
+			})
+			
+			
+			
+			//美图的url
+			$.ajax({
+				url:"https://www.apiopen.top/meituApi?page=1",
+				type:"post",
+				async:false,
+				dataType:"json",
+				success: function(data){
+//					console.log(data);
+					var data = data.data;
+					var h3 = '<h3>'+data[0].type+'</h3>';
+										
+//					console.log();					
+//					for(var i=0;i<data.length;i++){
+//						//时间戳的转换
+//						var time = new Date(data[i].publishedAt).getTime();
+//						var time1 = new Date(time);
+//						var time2 = time1.toLocaleDateString().replace(/\//g, "-") + " " + time1.toTimeString().substr(0, 8);
+////						console.log(time2);						
+//						
+//						var div =
+////						        	'<div class="image">'+'<h3>'+data[0].type+'</h3>'+
+//						        	'<div class="image_img">'+
+//						        	'<img src="'+data[i].url+'" />'+
+//						        	'<p>上传时间:&nbsp;&nbsp;'+time2+'</p>'+
+////						        	'</div>'+
+//						        	'</div>';
+//						$('.image').append(div);
+//					}
+//					//在指定的div后添加内容
+//					$(h3).insertBefore(".image");
+				}
+			})
+			
+			
+			
+			
+			
+			
+			
+			//小说的url
+			$.ajax({
+//				url:"http://gank.io/api/data/福利/10/1",
+				url:"https://www.apiopen.top/novelApi",
+				type:"post",				
+//				data:Data,
+				async: false,
+				dataType: "json",
+				success: function(data){
+//					console.log(data)
+					var data = data.data;
+					for(var i=0;i<data.length;i++){
+//						console.log(data[0].tag);
+						var div ='<div class="boo">'+
+									'<div class="book">'+
+							        '<div class="book_images">'+
+							        '<img class="book_img" src="'+data[i].book_cover+'" title="'+data[i].bookname+'"/>'+
+							        '</div>'+
+							        '<div class="book_mian">'+
+							        '<div class="book_div">'+
+							        '<span>名称:&nbsp;&nbsp;'+data[i].bookname+'</span>'+
+							        '<div class="book_zuozhe">'+
+							       	'<span style="margin-right: 30px;">作者:&nbsp;&nbsp;'+data[i].author_name+'</span>'+
+							        '<span>类型:&nbsp;&nbsp;'+data[i].tag+'</span>'+
+							        '</div>'+			
+							        '</div>'+
+							        '<p><span>简介:&nbsp;&nbsp;&nbsp;'+data[i].book_info+'</span></p>'+
+							        '</div>'+
+							        '</div>'+
+							        '</div>';
+						
+						$('body').append(div);
+					}										
+				}				
+			})
+		})		
+	})
+</script>

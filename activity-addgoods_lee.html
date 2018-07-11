@@ -1,0 +1,2556 @@
+<link rel="stylesheet" type="text/css" href="{$_W['config']['setting']['sitecssjsurl']}/web/themes/px/static/bootstrap/css/bootstrap.min.css">
+<link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="{$_W['config']['setting']['sitecssjsurl']}/web/themes/px/static/css/common.css">
+<link href="{$_W['config']['setting']['sitecssjsurl']}/web/resource/js/layer/skin/default/layer.css" rel="stylesheet">
+<script type="text/javascript">
+    if(navigator.appName == 'Microsoft Internet Explorer'){
+        if(navigator.userAgent.indexOf("MSIE 5.0")>0 || navigator.userAgent.indexOf("MSIE 6.0")>0 || navigator.userAgent.indexOf("MSIE 7.0")>0) {
+            alert('您使用的 IE 浏览器版本过低, 推荐使用 Chrome 浏览器或 IE8 及以上版本浏览器.');
+        }
+    }
+    
+    window.sysinfo = {
+        {if !empty($_W['uniacid'])}'uniacid': '{$_W['uniacid']}',{/if}
+        {if !empty($_W['acid'])}'acid': '{$_W['acid']}',{/if}
+        {if !empty($_W['openid'])}'openid': '{$_W['openid']}',{/if}
+        {if !empty($_W['uid'])}'uid': '{$_W['uid']}',{/if}
+        'siteroot': '{$_W['siteroot']}',
+        'siteurl': '{$_W['siteurl']}',
+        'attachurl': '{$_W['attachurl']}',
+        'attachurl_local': '{$_W['attachurl_local']}',
+        'attachurl_remote': '{$_W['attachurl_remote']}',
+        {if defined('MODULE_URL')}'MODULE_URL': '{MODULE_URL}',{/if}
+        'cookie' : {'pre': '{$_W['config']['cookie']['pre']}'},
+        'account' : {php echo json_encode($_W['account'])}
+    };
+    </script>
+<script>var require = { urlArgs: 'v={php echo date('YmdH');}' };</script>
+<script type="text/javascript" src="{$_W['config']['setting']['sitecssjsurl']}/web/themes/px/static/js/jquery.js"></script>
+<script type="text/javascript" src="{$_W['config']['setting']['sitecssjsurl']}/web/resource/js/layer/layer.js"></script>
+<script type="text/javascript" src="{$_W['config']['setting']['sitecssjsurl']}/web/resource/js/app/util.js"></script>
+<script type="text/javascript" src="{$_W['config']['setting']['sitecssjsurl']}/web/resource/js/require.js"></script>
+<script type="text/javascript" src="{$_W['config']['setting']['sitecssjsurl']}/web/resource/js/app/config.js"></script>
+<style>
+    .money_stely{  
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        height: 34px; 
+        text-indent:1em;
+    }
+    .text-area-width{ width:100% !important ; height:150px;}
+    
+</style>
+<!--<ul class="nav nav-tabs">
+    <li><a href="{php echo $this->createWebUrl('activity');}">活动设置</a></li>
+    <li><a href="{php echo $this->createWebUrl('activity',array('foo'=>'good_list'));}">商品管理</a></li>
+    {if empty($activity['id'])}
+    <li class="active"><a href="#">添加商品</a></li>
+    {else}
+    <li class="active"><a href="{php echo $this->createWebUrl('activity', array('foo'=>'edit_good', 'id'=>$activity['id']));}">编辑商品</a></li>
+    {/if}
+    <li><a href="{php echo $this->createWebUrl('bind');}">审核记录</a></li>
+</ul>-->
+
+
+<script>
+    require(['bootstrap', 'angular', 'util', 'underscore'], function($, angular, u, _){
+        $(function(){
+            var itemSet = {};
+            angular.module('app', []).controller('formPanel', function($scope, $http) {
+                $scope.type = "{$activity['type']}";
+                $scope.gifts = {php echo json_encode($activity['gifts'])};
+                $scope.sumItem = function(column) {
+                    var total = 0;
+                    angular.forEach($scope.gifts, function(val, key){
+                        total += parseFloat(val[column]);
+                    });
+                    return total;
+                }
+                $scope.addItem = function(entry) {
+                    var exists = false;
+                    angular.forEach($scope.gifts, function(val, key){
+                        if(val.gift == entry.id) {
+                            exists = true;
+                        }
+                    });
+                    if(!exists) {
+                        var gift = {};
+                        gift.gift = entry.id;
+                        gift.title = entry.title;
+                        gift.quantity = 100;
+                        gift.rate = 1;
+                        $scope.gifts.push(gift);
+                    }
+                };
+                $scope.delItem = function(entry) {
+                    $scope.gifts = _.without($scope.gifts, entry);
+                }
+
+                define.amd = false;
+                require(['{$modulePublic}bootstrap3-typeahead.min.js'], function(){
+                    $('.input-query').typeahead({
+                        source: function(query, process) {
+                            var params = {fuzzy: query};
+                            $http.post('{php echo $this->createWebUrl("gifts", array("foo"=>"search"))}', params).success(function(dat) {
+                                if($.isArray(dat)) {
+                                    var ds = [];
+                                    $.each(dat, function() {
+                                        var row = this;
+                                        itemSet[row.id] = row;
+
+                                        var exists = false;
+                                        angular.forEach($scope.gifts, function(val, key){
+                                            if(val.gift == row.id) {
+                                                exists = true;
+                                            }
+                                        });
+                                        if(!exists) {
+                                            var str = row.title;
+                                            if(row.type == 'cash') {
+                                                str += ' &nbsp; <span data-id="' + row.id + '" class="pull-right label label-danger">现金红包</span>';
+                                            }
+                                            if(row.type == 'coupon') {
+                                                str += ' &nbsp; <span data-id="' + row.id + '" class="pull-right label label-success">消费券</span>';
+                                            }
+                                            ds.push(str);
+                                        }
+                                    });
+                                    process(ds);
+                                }
+                            });
+                        },
+                        items: 10,
+                        updater: function(val) {
+                            var id = $('<div>' + val + '</div>').find('span').attr('data-id');
+                            $scope.$apply(function(){
+                                $scope.addItem(itemSet[id]);
+                            });
+                        },
+                        highlighter: function(item) {
+                            return item;
+                        }
+                    });
+                    define.amd = true;
+                });
+    
+                $scope.submit = function() {
+                    var message = '';
+                    if($.trim($(':text[name=title]').val()) == '') {
+                        message += '必须输入活动名称 <br>';
+                    }
+                    if($.trim($(':text[name=title]').val()).length > 10) {
+                        message += '活动名称不要超过10个汉字, 否则会造成红包无法发放 <br>';
+                    }
+                    if(message) {
+                        u.message(message);
+                    } else {
+                        $('#theform')[0].submit();
+                    }
+                };
+            });
+            angular.bootstrap(document, ['app']);
+        });
+    }); 
+	
+	$(function(){
+        $('input[type="radio"]').css('margin-top','-3').parent().css('padding-top','9');
+        $('input[type="checkbox"]').css('margin-top','-2').parent().css('padding-top','9');
+    });
+	
+</script>
+    <style>
+        .goods_sort_box{
+            border:1px dotted #0A8CD2;
+            margin: 20px;
+            /*padding: 20px;*/
+            width: 95%;
+            border-top-left-radius:0.5em;
+            border-top-right-radius:0.5em;
+        }
+        .buzhou{
+            margin: 20px;
+            /*padding: 20px;*/
+            width: 95%;
+            height:50px;
+        }
+        .div_total{
+            border-bottom:1px dotted #0A8CD2;
+            height:30px;border-top-left-radius:0.5em;
+            background-color:#5bc0de;
+            border-top-right-radius:0.3em;
+            color:#fff;
+            font-weight:bold;
+        }
+        .div_top{
+            background-color:#5bc0de;
+            font-size:16px;
+            width:45%;
+            height:100%;
+            line-height:30px;
+            border-top-left-radius:0.3em;
+            float:left;
+            text-align:left;
+            margin-left:10px;
+        }
+        .div_right{
+            float:right;
+            font-size:30px;
+            width:45%;
+            height:100%;
+            line-height:30px;
+            border-top-right-radius:0.3em;
+            text-align:right;
+            margin-right:10px;
+        }
+        .meibu{
+            float:left;
+        }
+        .youjian{
+            margin-top:10px;
+            margin-left:10px;
+            margin-right:10px;
+        }
+        #fabu{
+            width:150px;
+        }
+        .fabu-div{
+            margin-left:30px;
+            margin-top:21px;
+        }
+    </style>
+    <div class="formBox">
+        <div class="menuListTitle">
+            <ul class="clearfix">
+                <li><a href="{php echo $_SERVER['HTTP_REFERER']; }">返回列表<div class="arrow"><em>◆</em><span>◆</span></div></a></li>
+            </ul>
+        </div>
+    <form action="" method="post" class="form-horizontal form" enctype="multipart/form-data" id="form1">
+            <div class="menuTitle"> 
+               {if empty($activity['id'])}
+                <h3>新增商品</h3>
+                {else}
+                <h3 class="active"><a href="{php echo $this->createWebUrl('activity', array('foo'=>'edit_good', 'id'=>$activity['id']));}">编辑商品</a></h3>
+               {/if}
+                 
+            </div>
+            <div class="panel-body">
+                <script>
+                    function showorhide(div_top,num){
+                        var $jiantou = $(".div_top").eq(num).parent().find(".fa");  //箭头
+                        var $div_main = $(".div_main").eq(num);   //主要内容
+                        if($jiantou.attr('class') == "fa fa-angle-double-down"){
+                            $jiantou.attr('class',"fa fa-angle-double-up");
+                            $div_main.slideUp(300);
+                        }else{
+                            //显示当前块内容
+                            $jiantou.attr('class',"fa fa-angle-double-down");
+                            $div_main.slideDown(300);
+
+                            //隐藏其余块内容
+                            $(".goods_sort_box").each(function(i,item){
+                                if(i != num){
+                                    $(this).find('.div_right').find('.fa').attr('class','fa fa-angle-double-up');
+                                    $(this).find(".div_main").slideUp(300);
+                                }
+                            });
+                        }
+                    }
+
+                    //定时器1秒判断一次每个步骤的完成情况
+                    setInterval("check_success()",200);
+
+                    //第一个参数：真假
+                    //第二个参数：第几个步骤图标
+                    function check_buzhou(not_suc,num){
+                        if(not_suc){
+                            //填写失败
+                            $('#buzhou'+num).attr('src',"../addons/yunbei_fanli/images/buzhou/error.png");
+                        }else{
+                            //填写成功
+                            $('#buzhou'+num).attr('src',"../addons/yunbei_fanli/images/buzhou/success.png");
+                        }
+                    }
+
+                    function check_success(){
+                        //第一步  商品id 商品标题 商品主图 所属店铺 支付价
+                        var not_suc1 = 0;
+                        if($("input[name=good_id]").val()=='' || $("input[name=title]").val()=='' || $("input[name=thumb]").val()=='' || $(".shopid").val()==0 || $("input[name=pay]").val()=='' || $("input[name=pay]").val() == 0){
+                            not_suc1 = 1;
+                        }
+                        check_buzhou(not_suc1,1);
+
+                        //第二步  按时间分配库存 不允许重复刷单
+                        var not_suc2 = 0;
+                        if($('input[name=accordingTime]').prop('checked')){
+                            $('.time_stock_num').each(function(){
+                                if($(this).val() == ''){
+                                    not_suc2 = 1;
+                                }
+                            });
+                        }
+                        if($('input[name=norepeat]').prop('checked')){
+                            if($('input[name=cycle]').val() == '' || $('input[name=repeat_notice]').val() == ''){
+                                not_suc2 = 1;
+                            }
+                        }
+                        check_buzhou(not_suc2,2);
+
+                        //第三步
+                        var not_suc3 = 0;
+                        //触发类型 搜索淘口令和直通车卡首屏
+                        if($('input[name=isdirectlyopen]:checked').val() == 0 || $('input[name=isdirectlyopen]:checked').val() == 4){
+                            //关键词
+                            $('.taokeywords_value:visible').each(function(){
+
+                                if($(this).val() == ''){
+                                    not_suc3 = 1;
+                                }
+                            });
+                            if($('input[name=keyPercentRand]').prop('checked')){
+                                //百分比判断
+                                $('.keyPercent:visible').each(function(){
+                                    if($(this).val() == ''){
+                                        not_suc3 = 1;
+                                    }
+                                });
+                            }
+                        }
+
+                        //触发类型 关键词
+                        if($('input[name=isdirectlyopen]:checked').val() == 9){
+                            //关键词
+                            $('.taokeywords_value:visible').each(function(){
+
+                                if($(this).val() == ''){
+                                    not_suc3 = 1;
+                                }
+                            });
+                            //百分比判断
+                            $('.keyPercent:visible').each(function(){
+                                if($(this).val() == ''){
+                                    not_suc3 = 1;
+                                }
+                            });
+                        }
+
+                        //触发类型 淘宝群聊
+                        if($('input[name=isdirectlyopen]:checked').val() == 6){
+                            if($('input[name=tao_er_all]').val() == '' || $('input[name=tao_er_old]').val() == '' || $('input[name=tao_er_new]').val() == ''){
+                                not_suc3 = 1;
+                            }
+                        }
+                        check_buzhou(not_suc3,3);
+
+                        //第四步
+                        //判断返现方式
+                        var not_suc4 = 0;
+                        if($('input[name=fanxiantype]:checked').val() == 1){
+                            if($('input[name=fanxian]').val() == '' || $('input[name=fanxian]').val() == 0){
+                                not_suc4 = 1;
+                            }
+                        }else if($('input[name=fanxiantype]:checked').val() == 0){
+                            if($('input[name=percent]').val() == '' || $('input[name=percent]').val() == 0){
+                                not_suc4 = 1;
+                            }
+                        }
+                        //判断设置多奖品
+                        if($('input[name=more_prize]').prop("checked")){
+
+                            $(".prize_name").each(function(){
+
+                                if($(this).val() == ''){
+                                    not_suc4 = 1;
+
+                                }
+                            });
+                        }
+                        //console.log(not_suc4);
+                        check_buzhou(not_suc4,4);
+
+                        //第五步
+                        var not_suc5 = 0;
+                        if($('input[name=ismemo]').prop("checked")){
+
+                            if($('textarea[name=memo]').val() == ''){
+                                not_suc5 = 1;
+                            }
+                        }
+                        check_buzhou(not_suc5,5);
+                        //console.log($('input[name=ismemo]').prop("checked"));
+
+                        //判断发布颜色
+                        if($("#buzhou1").attr('src') == '../addons/yunbei_fanli/images/buzhou/success.png' && $("#buzhou2").attr('src') == '../addons/yunbei_fanli/images/buzhou/success.png' && $("#buzhou3").attr('src') == '../addons/yunbei_fanli/images/buzhou/success.png' && $("#buzhou4").attr('src') == '../addons/yunbei_fanli/images/buzhou/success.png' && $("#buzhou5").attr('src') == '../addons/yunbei_fanli/images/buzhou/success.png'){
+                            $('input[name=submit]').attr('class','btn btn-success btn-lg');
+                        }else{
+                            $('input[name=submit]').attr('class','btn btn-default btn-lg');
+                            //$('input[name=submit]').attr('disabled',true);
+
+                        }
+
+                    }
+
+                </script>
+
+                <style>
+                    .img_width{
+                        width:95px;
+                    }
+                    .jiantou_width{
+                        width:55px;
+                    }
+                    .tac{
+                        text-align:center;
+                        font-size:13px;
+                    }
+                </style>
+
+                <div class="buzhou">
+                    <div style="height:100%;width:955px;margin:0 auto;">
+                        <div class="meibu">
+                            <img id='buzhou1' src="../addons/yunbei_fanli/images/buzhou/error.png" class="img_width" onclick="showorhide(this,0)"/>
+                            <div class="tac">1.商品基本信息</div>
+                        </div>
+                        <div class="meibu youjian">
+                            <img src="../addons/yunbei_fanli/images/buzhou/jiantou.png" class="jiantou_width"/>
+                        </div>
+                        <div class="meibu">
+                            <img id='buzhou2' src="../addons/yunbei_fanli/images/buzhou/error.png" class="img_width" onclick="showorhide(this,1)"/>
+                            <div class="tac">2.商品投放计划</div>
+                        </div>
+                        <div class="meibu youjian">
+                            <img src="../addons/yunbei_fanli/images/buzhou/jiantou.png" class="jiantou_width"/>
+                        </div>
+                        <div class="meibu">
+                            <img id='buzhou3' src="../addons/yunbei_fanli/images/buzhou/error.png" class="img_width"  onclick="showorhide(this,2)"/>
+                            <div class="tac">3.进入淘宝方式</div>
+                        </div>
+                        <div class="meibu youjian">
+                            <img src="../addons/yunbei_fanli/images/buzhou/jiantou.png" class="jiantou_width"/>
+                        </div>
+                        <div class="meibu">
+                            <img id='buzhou4' src="../addons/yunbei_fanli/images/buzhou/error.png" class="img_width" onclick="showorhide(this,3)"/>
+                            <div class="tac">4.奖励设置</div>
+                        </div>
+                        <div class="meibu youjian">
+                            <img src="../addons/yunbei_fanli/images/buzhou/jiantou.png" class="jiantou_width"/>
+                        </div>
+                        <div class="meibu">
+                            <img id='buzhou5' src="../addons/yunbei_fanli/images/buzhou/error.png" class="img_width" onclick="showorhide(this,4)"/>
+                            <div class="tac">5.其他设置</div>
+                        </div>
+                        <div class="meibu fabu-div">
+                            <input name="submit" type="submit" value="发布" onclick="return check_submit()" class="btn btn-default btn-lg"  id="fabu">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="goods_sort_box" style="clear:both;margin-top:70px;">
+                    <div class="div_total" onclick="showorhide(this,0)">
+                        <div class="div_top" >
+                            第一步：填写商品基本信息
+                        </div>
+                        <div class="div_right">
+                            <i class="fa fa-angle-double-down" aria-hidden="true"></i>
+                        </div>
+
+
+                    </div>
+                    <div style="padding:20px;" class="div_main">
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"> 商品链接</label>
+                            <div class="col-sm-6 col-lg-4 col-xs-12">
+                                <input type="text" name="url" class="form-control" value="{$activity['url']}" />
+                                <span class="help-block">电商平台商品的链接。提示：输入链接后将自动生成商品标题和商品图片</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span> 商品ID</label>
+                            <div class="col-sm-6 col-lg-2 col-xs-12">
+                                <input type="text" name="good_id" class="form-control" value="{$activity['good_id']}" />
+                                <span class="help-block">淘宝商品id</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span> 商品标题</label>
+                            <div class="col-sm-6 col-lg-4 col-xs-12">
+                                <input type="text"  name="title" class="form-control" value="{$activity['title']}" />
+
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span> 商品主图</label>
+                            <div class="col-sm-6 col-lg-4 col-xs-12" id="zhutu">
+                                {php echo tpl_form_field_image('thumb', $activity['thumb'])}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span> 商品所属店铺</label>
+                            <div class="col-sm-2 col-xs-12" id="zhutu">
+                                <select name="shopid" class="form-control shopid">
+                                    <option value="0">请选择店铺</option>
+                                    {loop $shop_list $shop}
+                                    <option value="{$shop['id']}" shoptype="{$shop['type']}" <?php echo $activity['shopid']==$shop['id']?'selected':''; ?> >{$shop['name']}</option>
+                                    {/loop}
+                                </select>
+
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label"><span class="text-danger">*</span>支付价</label>
+                            <div class="col-sm-2">
+                                <div class="input-group">
+                                    <input type="text" name="pay" id="pay" value="<?php if(!empty($activity['pay'])){ echo $activity['pay'];}else{echo 0;}?>" class="form-control" >
+                                    <span class="input-group-addon">元</span>
+                                </div>
+                            </div>
+                            {if $_W['uniacid']==1710 || $_GPC['test']==1}
+                            <div class="col-sm-2">
+                                <input type="checkbox" name="payhide" value="1" {if $activity['payhide']==1}checked{/if}> 前台不显示
+                            </div>
+                            {/if}
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label"><span class="text-danger">*</span>成本价</label>
+                            <div class="col-sm-2">
+                                <div class="input-group">
+                                    <input type="text" name="real_pay" id="real_pay" value="<?php if(!empty($activity['real_pay'])){ echo $activity['real_pay'];}else{echo 0;}?>" class="form-control" >
+                                    <span class="input-group-addon">元</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>是否上架</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="radio" value="1" name="status" <?php echo ($activity['status']==1 || empty($activity['id']))?'checked':''; ?> > 是
+                                <input type="radio" value="0" name="status" style="margin-left:10px;" <?php echo $activity['status']=='0'?'checked':''; ?>  > 否
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span> 排序</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <div class="input-group col-sm-1" >
+                                    <input type="text"  name="by" class="form-control" value="{if $activity['by'] > 0}{$activity['by']}{else}0{/if}" />
+                                </div>
+                                <span class="help-block">提示：排序数字越小越靠前</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">微信端不显示</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="radio" value="0" name="ishide" <?php echo $activity['ishide']==0?'checked':''; ?> > 否
+                                <input type="radio" value="1" name="ishide" style='margin-left:10px;' <?php echo $activity['ishide']==1?'checked':''; ?> > 作为奖品不显示
+                                <input type="radio" value="2" name="ishide" style='margin-left:10px;' <?php echo $activity['ishide']==2?'checked':''; ?> > 不显示
+                                <span class="help-block">选择“否”时，此商品在购物返利商城正常显示；<br>选择“作为奖品不显示”时，此商品在购物返利商城无显示，商家可在积分商城设置积分兑换活动，让粉丝兑换返利名额；<br>选择“不显示”时，此商品在购物返利商城无显示，商家可把此活动链接通过私聊、分组群发等发送给粉丝，得到链接的粉丝即可参与该商品的返利活动；</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">商品详情</label>
+                            <div class="col-sm-9 col-lg-4  col-xs-12">
+                        <textarea style="height:300px;" class="richtext-clone text-area-width" name="explain">
+                        {$activity['explain']}
+                       </textarea>
+                                <!--<span class="help-block">详细说明活动参与规则</span>-->
+                            </div>
+                            <script type="text/javascript">
+                                require(['jquery', 'util'],function($, util){
+                                    window.editor = util.editor($('.richtext-clone')[0]);
+                                })
+                            </script>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">自动弹窗</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="checkbox"  name="popup" value="1" class="popup" <?php echo $activity['popup']==1?'checked':'' ?> /> 勾选表示用户进入活动页面自动弹出活动规则
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">活动规则</label>
+                            <div class="col-sm-9 col-lg-4 col-xs-12">
+                        <textarea style="height:300px;" class="richtext-clone text-area-width" name="rule">
+                            {$activity['rule']}
+                       </textarea>
+
+                            </div>
+                            <script type="text/javascript">
+                                require(['jquery', 'util'],function($, util){
+                                    window.editor = util.editor($('.richtext-clone')[1]);
+                                })
+                            </script>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="goods_sort_box">
+                    <div class="div_total" onclick="showorhide(this,1)">
+                        <div class="div_top" >
+                            第二步：商品投放计划
+                        </div>
+                        <div class="div_right">
+                            <i class="fa fa-angle-double-up" aria-hidden="true"></i>
+                        </div>
+
+
+                    </div>
+                    <div style="padding:20px;display:none;" class="div_main">
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>活动时间</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <!--<?php if($activity['start_time'] && $activity['start_time'] != '0000-00-00'){ echo tpl_form_field_daterange('datelimit', array('start' => date('Y-m-d', $activity['start_time']),'end' => date('Y-m-d', $activity['end_time'])), '');}else{echo tpl_form_field_daterange('datelimit', array('start' => date('Y-m-d', time()),'end' => date('Y-m-d', time()+604800)), '');}?>-->
+                                <?php if($activity['start_time'] && $activity['start_time'] != '0000-00-00'){ echo tpl_form_field_daterange('datelimit', array('start' => $activity['start_time'],'end' => $activity['end_time']), true);}else{echo tpl_form_field_daterange('datelimit', array('start' => date('Y-m-d', time()),'end' => date('Y-m-d', time()+604800)), true);}?>
+                            </div>
+                        </div>
+                        {if in_array($_W['uniacid'],[21,97,1508,1687,1654,1710,1695,722])}
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>网络选择</label>
+                            <div class="col-sm-9 col-lg-4 col-xs-12">
+                                <input type="radio" value="1" name="nowifi" <?php echo $activity['nowifi']=='1'?'checked':''; ?>  > 手机网络
+                                <input type="radio" value="0" name="nowifi" style="margin-left:10px;" <?php echo $activity['nowifi']== 0 ? 'checked' :''; ?>  > 手机网络+wifi
+                            </div>
+                        </div>
+                        {/if}
+                        <!-- 部分地区禁止查看 -->
+                        {if in_array($_W['uniacid'],[21,97,1508,1687,1710,1695])}
+                        <script type="text/javascript">
+                            $(function(){
+                                $('#btn_add_area').bind('click', function(){
+                                    $('<div class="form-group"><label class="control-label col-sm-2">城市：</label><div class="col-sm-10"><script type="text/javascript">require(["jquery", "district"], function($, dis){$(".tpl-district-container:last").each(function(){var elms = {};elms.province = $(this).find(".tpl-province")[0];elms.city = $(this).find(".tpl-city")[0];elms.district = $(this).find(".tpl-district")[0];var vals = {};vals.province = $(elms.province).attr("data-value");vals.city = $(elms.city).attr("data-value");vals.district = $(elms.district).attr("data-value");dis.render(elms, vals, {withTitle: true});});});<\/script> <div class="row row-fix tpl-district-container"><div class="col-xs-12 col-sm-3 col-md-3 col-lg-2"><select name="no_area[province][]" data-value="" class="form-control tpl-province"></select></div><div class="col-xs-12 col-sm-3 col-md-3 col-lg-2"><select name="no_area[city][]" data-value="" class="form-control tpl-city"></select></div> <div class="col-xs-12 col-sm-3 col-md-3 col-lg-2"><input class="btn btn-warning"  onclick="del_no_area(this)" type="button" value="移除"></div></div></div></div>').appendTo('.no_area:last');
+                                });
+                            });
+
+                        </script>
+
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>部分地区禁止查看</label>
+                            <div class="col-sm-9 col-lg-4 col-xs-12">
+                                <input type="checkbox" value="{$activity['no_area_btn']}" id="no_area_btn" onclick="javascript:this.value=this.checked?1:0;"  name="no_area_btn" <?php echo $activity['no_area_btn']==1 ? 'checked' : ''; ?> > 是
+                            </div>
+                        </div>
+                        <div class="no_area_div"  {if $activity['no_area_btn'] == 0}style="display: none;"{/if}>
+                            <div class="form-group">
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label"></label>
+                                <div class="col-sm-9 col-lg-4 col-xs-12">
+                                    <input class="btn btn-primary" id="btn_add_area" type="button" value="添加地区">
+                                </div>
+                            </div>
+                            <div class="form-group no_area">
+                                {loop $activity['no_area'] $index  $item}
+                                <div class="form-group">
+                                    <label class="control-label col-sm-2">城市：</label>
+                                    <div class="col-sm-10">
+                                        <script type="text/javascript">require(["jquery", "district"], function($, dis){$(".tpl-district-container").each(function(){var elms = {};elms.province = $(this).find(".tpl-province")[0];elms.city = $(this).find(".tpl-city")[0];elms.district = $(this).find(".tpl-district")[0];var vals = {};vals.province = $(elms.province).attr("data-value");vals.city = $(elms.city).attr("data-value");vals.district = $(elms.district).attr("data-value");dis.render(elms, vals, {withTitle: true});});});
+                                        </script>
+                                        <div class="row row-fix tpl-district-container">
+                                            <div class="col-xs-12 col-sm-3 col-md-3 col-lg-2">
+                                                <select name="no_area[province][]" data-value="{$item[0]}" class="form-control tpl-province"></select>
+                                            </div>
+                                            <div class="col-xs-12 col-sm-3 col-md-3 col-lg-2">
+                                                <select name="no_area[city][]" data-value="{$item[1]}" class="form-control tpl-city"></select>
+                                            </div>
+                                            <div class="col-xs-12 col-sm-3 col-md-3 col-lg-2">
+                                                <input class="btn btn-warning"  onclick="del_no_area(this)" type="button" value="移除">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/loop}
+                            </div>
+                        </div>
+                        <script>
+                            //部分地区禁止查看(添加)
+                            $('#no_area_btn').on('click',function(){
+                                var this_val = $("input[name='no_area_btn']").val();
+                                if( this_val  ){
+                                    $('.no_area_div').show();
+                                }
+                                if( this_val == 0){
+                                    $('.no_area_div').hide();
+                                }
+                            })
+                            //删除
+                            function del_no_area(obj){
+                                $(obj).parent().parent().parent().parent().remove();
+                            }
+                        </script>
+                        {/if}
+                        <!-- 部分地区禁止查看end -->
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label"><span class="text-danger">*</span>每人限购</label>
+                            <div class="col-sm-9 col-lg-5 col-xs-12">
+                                <div class="input-group col-sm-9 " >
+                                    <span class="input-group-addon">单笔限购</span>
+                                    <input type="text" name="singlenum" value="<?php if(!empty($activity['singlenum'])){ echo $activity['singlenum'];}else{echo 0;}?>" class="form-control"  onkeyup="if(this.value.length==1){this.value=this.value.replace(/[^0-9]/g,'')}else{this.value=this.value.replace(/\D/g,'')}" onafterpaste="if(this.value.length==1){this.value=this.value.replace(/[^1-9]/g,'')}else{this.value=this.value.replace(/\D/g,'')}">
+                                    <span class="input-group-addon">件</span>
+
+                                    <span class="input-group-addon" style='backgroud:#fff'>永久限购</span>
+                                    <input type="text" name="maxnum" value="<?php if(!empty($activity['maxnum'])){ echo $activity['maxnum'];}else{echo 0;}?>" class="form-control" onkeyup="if(this.value.length==1){this.value=this.value.replace(/[^0-9]/g,'')}else{this.value=this.value.replace(/\D/g,'')}" onafterpaste="if(this.value.length==1){this.value=this.value.replace(/[^1-9]/g,'')}else{this.value=this.value.replace(/\D/g,'')}">
+                                    <span class="input-group-addon">件</span>
+
+                                </div>
+                                <span class="help-block">限制单笔交易购买数量以及每个用户最大购买数量（注：为 0 表示无限制）</span>
+
+                            </div>
+
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label"><span class="text-danger"></span>库存</label>
+                            <div class="col-sm-10">
+                                <div class="input-group col-sm-2 " >
+                                    <input type="text" name="stock" value="{php echo empty($activity['stock'])?0:$activity['stock']}" class="form-control goods_stock" onchange="stock_change()">
+                                </div>
+                                <span class="help-block">实际的库存，微信端显示库存数即为此设置数</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label"><span class="text-danger"></span>虚拟销量</label>
+                            <div class="col-sm-10">
+                                <div class="input-group col-sm-2 " >
+                                    <input type="text" name="fictitious_sales" value="{php echo empty($activity['fictitious_sales'])?0:$activity['fictitious_sales']}" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label"><span class="text-danger"></span>真实销量</label>
+                            <div class="col-sm-10">
+                                {if $_W['uniacid']==1347}
+                                <div class="col-sm-1">
+                                    <div class="input-group" style='font-size:14px;padding-top:7px'>
+                                        <span class='sales-show'> {$activity['sales']} </span>
+                                        <input type='hidden' name='sales' class='sales' value="{$activity['sales']}" data="{$activity['sales']}" />
+                                    </div>
+                                </div>
+                                <div class="col-sm-2 input-group">
+                                    <input type="button" value="清零" class="btn btn-danger" onclick="sales_change($(this))">
+                                </div>
+                                {else}
+                                <div class="input-group col-sm-2" style='font-size:14px;padding-top:7px'>
+                                    {$activity['sales']}
+                                    <input type='hidden' name='sales'value="{$activity['sales']}" />
+                                </div>
+                                {/if}
+
+                                <span class="help-block">微信端显示的销量=虚拟销量+真实销量</span>
+                            </div>
+                        </div>
+
+                        <!-- lu--按时间显示库存--start-->
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">按时间分配库存</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="checkbox" value="{$activity['accordingTime']}" onclick="javascript:this.value=this.checked?1:0;" name="accordingTime" <?php echo $activity['accordingTime']==1?'checked':''; ?> /> 是
+                                {if !empty($activity['timeStock'])}
+                                <input type="button" value="任务重置" id="resetTask"   class="btn btn-primary" style="margin-left:10px;">
+                                <span class="help-block">当点击重置任务，按时间分配累积的卖剩库存将重置为0</span>
+                                {/if}
+                            </div>
+                        </div>
+                        <script>
+
+                            $(function(){
+                                //重置
+                                $('#resetTask').on('click',function(){
+                                    if($("input[name='accordingTime']").val() == 1){
+                                        $(this).val('已重置');
+                                        $('.timestockHead').find('select').removeAttr('disabled');
+                                        $('.timestockHead').find('input').removeAttr('disabled');
+                                        $('.timestockHead').find('.stockUse').remove();
+                                        $('.timestockHead').find('.stockLeft').remove();
+                                        $('.buttonStock').show();
+                                        $("input[name='resetStock']").val(1);
+                                    }
+                                })
+                            })
+                            $(function(){
+                                //选择
+                                $("input[name='accordingTime']").on('click',function(){
+                                    if($("input[name='accordingTime']").val() == 1){
+                                        $(".time_stock_set2").show();
+                                    }else{
+                                        $(".time_stock_set2").hide()
+                                    }
+                                })
+                            })
+                            //动态添加
+                            function stockTimeAdd(){
+                                var h_option = '';
+                                for(var i=0;i<24;i++){
+                                    if(i<10){
+                                        i='0'+i;
+                                    }
+                                    h_option+='<option>'+i+'</option>';
+                                }
+                                var m_option = '';
+                                for(var j=0;j<60;j++){
+                                    if(j<10){
+                                        j='0'+j;
+                                    }
+                                    m_option+='<option>'+j+'</option>';
+                                }
+                                var html = '<div class="form-group timestock">'+
+                                        '<div class="col-sm-5 col-lg-5 col-xs-5">'+
+                                        '<select name="hourStart[]" class="form-control time_stock_start_hour" style="float:left;width:20%;">'+
+                                        h_option+
+                                        '<select>'+
+                                        "<div style='float:left;width:6%;text-align:center;'>：</div>"+
+                                        '<select name="minuteStart[]" class="form-control time_stock_start_minute" style="float:left;width:20%;">'+
+                                        m_option+
+                                        '<select>'+
+                                        '<div style="float:left;width:8%;text-align:center;">~</div>'+
+                                        '<select name="hourEnd[]" class="form-control" style="float:left;width:20%;">'+
+                                        h_option+
+                                        '<select>'+
+                                        '<div style="float:left;width:6%;text-align:center;">：</div>'+
+                                        '<select name="minuteEnd[]" class="form-control time_stock_end_minute" style="float:left;width:20%;">'+
+                                        m_option+
+                                        '<select>'+
+                                        '</div>'+
+                                        '<div class="col-sm-2 col-lg-2 col-xs-2">'+
+                                        '<div class="input-group"> '+
+                                        '<span class="input-group-addon">分配</span>'+
+                                        ' <input type="text" name="stockNum[]" onchange="add_time_stock(this)" value="" class="form-control time_stock_num" >'+
+                                        '</div>'+
+                                        '</div>'+
+                                        '<div class="col-sm-1 col-lg-1 col-xs-1">'+
+                                        ' <div class="input-group">'+
+                                        '<input type="button" value="移除" class="btn btn-danger" onclick="javascript:$(this).parents('+"'.timestock'"+').remove();add_time_stock()">'+
+                                        '</div>'+
+                                        '</div>'+
+                                        '</div>';
+                                $('.timestockHead').append(html);
+                            }
+                        </script>
+                        {if !empty($activity['timeStock'])}
+                        <input type="hidden" value="0" name="resetStock" class="btn btn-primary">
+                        {/if}
+                        <div class='form-group time_stock_set2'  {if $activity['accordingTime'] != 1}style="display: none;"{/if}>
+                            <div class="col-sm-12 col-lg-12 col-xs-12" >
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label"></label>
+                                <div class="col-sm-9 col-lg-6 col-xs-12">
+                                    <span class="input-group " style="font-size: 16px; margin-right: 25px;">
+                                        当前分配总量：<span style="color:red" id="now_time_stock_num"></span>
+                                        <!-- 锦圣达定制 -->
+                                        {if in_array($_W['uniacid'],[21,97,1687])}
+                                         <span style="margin-left: 25px;" class="btn btn-primary" onclick="stock_height()">高级设置</span>
+                                        {/if}
+                                        <!-- 锦圣达定制 -->
+                                    </span>
+                                </div>
+                            </div>
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">时间段</label>
+                        <div class="col-sm-9 col-lg-7 col-xs-12 timestockHead" style='border:1px solid #dddddd;border-radius:5px;padding-top:10px;margin-left:15px'>
+
+                            {loop $activity['timeStock'] $index $row}
+                            <div class="form-group timestock">
+                                <div class="col-sm-5 col-lg-5 col-xs-5">
+                                    <!-- 时 -->
+                                    <select name="hourStart[]" class="form-control" disabled="disabled" style='float:left;width:20%;'>
+                                        {loop $hour_array  $item}
+                                        <option {if $row['hour']['start'] == $item }selected='selected'{/if}>{$item}</option>
+                                        {/loop}
+                                        <select>
+                                            <div style='float:left;width:6%;text-align:center;'>：</div>
+                                            <!-- 分 -->
+                                            <select name="minuteStart[]" class="form-control" disabled="disabled"  style='float:left;width:20%;'>
+                                                {loop $minute_array $item}
+                                                <option {if $row['minute']['start'] == $item }selected='selected'{/if}>{$item}</option>
+                                                {/loop}
+                                                <select>
+                                                    <div style='float:left;width:8%;text-align:center;'>~</div>
+                                                    <!-- 时 -->
+                                                    <select name="hourEnd[]" class="form-control" disabled="disabled" style='float:left;width:20%;'>
+                                                        {loop $hour_array  $item}
+                                                        <option {if $row['hour']['end'] == $item }selected='selected'{/if} >{$item}</option>
+                                                        {/loop}
+                                                        <select>
+                                                            <div style='float:left;width:6%;text-align:center;'>：</div>
+                                                            <!-- 分 -->
+                                                            <select name="minuteEnd[]" class="form-control" disabled="disabled" style='float:left;width:20%;'>
+                                                                {loop $minute_array $item}
+                                                                <option {if $row['minute']['end'] == $item }selected='selected'{/if} >{$item}</option>
+                                                                {/loop}
+                                                                <select>
+                                </div>
+                                <div class="col-sm-2 col-lg-2 col-xs-2">
+                                    <div class="input-group" >
+                                        <span class="input-group-addon">分配</span>
+                                        <input type="text" name="stockNum[]" onchange="add_time_stock()" disabled="disabled" value="{$row['stockNum']}" class="form-control time_stock_num" >
+                                    </div>
+                                </div>
+                                <div class="col-sm-2 col-lg-2 col-xs-2 stockUse">
+                                    <div class="input-group" >
+                                        <span class="input-group-addon">消耗</span>
+                                        <input type="text"  disabled="disabled" value="{$row['stockNumUse']}" class="form-control" >
+                                    </div>
+                                </div>
+                                <div class="col-sm-2 col-lg-2 col-xs-2 stockLeft">
+                                    <div class="input-group" >
+                                        <span class="input-group-addon">剩余</span>
+                                        <input type="text"  disabled="disabled" value="{$row['stockNumNow']}" class="form-control" >
+                                    </div>
+                                </div>
+                                <div class="col-sm-1 col-lg-1 col-xs-1 buttonStock" style=" display: none;">
+                                    <div class="input-group taokeywords-btn" >
+                                        {if $index == 0}
+                                        <input type="button" value="增加" class="btn btn-primary"  onclick="stockTimeAdd()">
+                                        {else}
+                                        <input type="button" value="移除" class="btn btn-danger"  onclick="javascript:$(this).parents('.timestock').remove();add_time_stock()">
+                                        {/if}
+                                    </div>
+                                </div>
+                            </div>
+                            {/loop}
+                            {if empty($activity['timeStock'])}
+                            <div class="form-group timestock">
+                                <div class="col-sm-5 col-lg-5 col-xs-5">
+                                    <!-- 时 -->
+                                    <select name="hourStart[]" class="form-control" style='float:left;width:20%;'>
+                                        {loop $hour_array  $item}
+                                        <option {if $row['hourStart'] == $item }selected='selected'{/if}>{$item}</option>
+                                        {/loop}
+                                        <select>
+                                            <div style='float:left;width:6%;text-align:center;'>：</div>
+                                            <!-- 分 -->
+                                            <select name="minuteStart[]" class="form-control"  style='float:left;width:20%;'>
+                                                {loop $minute_array $item}
+                                                <option {if $row['minuteStart'] == $item }selected='selected'{/if}>{$item}</option>
+                                                {/loop}
+                                                <select>
+                                                    <div style='float:left;width:8%;text-align:center;'>~</div>
+                                                    <!-- 时 -->
+                                                    <select name="hourEnd[]" class="form-control" style='float:left;width:20%;'>
+                                                        {loop $hour_array  $item}
+                                                        <option {if $row['hourEnd'] == $item }selected='selected'{/if} >{$item}</option>
+                                                        {/loop}
+                                                        <select>
+                                                            <div style='float:left;width:6%;text-align:center;'>：</div>
+                                                            <!-- 分 -->
+                                                            <select name="minuteEnd[]" class="form-control" style='float:left;width:20%;'>
+                                                                {loop $minute_array $item}
+                                                                <option {if $row['minuteEnd'] == $item }selected='selected'{/if} >{$item}</option>
+                                                                {/loop}
+                                                                <select>
+                                </div>
+                                <div class="col-sm-2 col-lg-2 col-xs-2">
+                                    <div class="input-group" >
+                                        <span class="input-group-addon">分配</span>
+                                        <input type="text" name="stockNum[]" onchange="add_time_stock(this)" value="{$row['stockNum']}" class="form-control time_stock_num" >
+                                    </div>
+                                </div>
+                                <div class="col-sm-1 col-lg-1 col-xs-1 buttonStock">
+                                    <div class="input-group taokeywords-btn" >
+                                        <input type="button" value="增加" class="btn btn-primary"  onclick="stockTimeAdd()">
+                                    </div>
+                                </div>
+                            </div>
+                            {/if}
+                        </div>
+                       </div>
+                      <!-- lu--按时间显示库存--end-->
+
+                        <!-- 设置失效时间 2017-10-11 -->
+                        {if in_array($_W['uniacid'],$jkc_array)}
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">失效时间</label>
+                            <div class="col-sm-10">
+                                <div class="input-group col-sm-2 " >
+                                    <input type="text" name="invalid_time" value="<?php if(!empty($activity['invalid_time'])){ echo $activity['invalid_time'];}else{echo 0;}?>" class="form-control" >
+                                    <span class="input-group-addon">小时</span>
+                                </div>
+                                <span class="help-block">用户点击购买后多久失效，失效后不能返利（注：为 0 表示无限制）</span>
+
+                            </div>
+
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">失效前提醒</label>
+                            <div class="col-sm-9 col-lg-4 col-xs-12">
+                                <textarea class="form-control" name="invalid_msg" rows="5" placeholder="商品快到失效时间时发送给用户的提醒信息">{$activity['invalid_msg']}</textarea>
+                            </div>
+                        </div>
+                        {/if}
+
+
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">不允许重复补单</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="checkbox" value="1" onclick='check_norepeat()' name="norepeat" <?php echo $activity['norepeat']==1?'checked':''; ?> /> 是
+
+                            </div>
+                        </div>
+
+                        <div class="form-group cycle_div">
+                            <label class="col-sm-2 control-label"><span class="text-danger">*</span>限制周期</label>
+                            <div class="col-sm-10">
+                                <div class="input-group col-sm-2 " >
+                                    <input type="text" name="cycle" value="<?php if(!empty($activity['cycle'])){ echo $activity['cycle'];}else{echo 0;}?>" class="form-control" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')">
+                                    <span class="input-group-addon">天</span>
+                                </div>
+                                <span class="help-block">不允许重复补单的周期</span>
+
+                            </div>
+
+                        </div>
+                        <div class="form-group cycle_div">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>到时通知</label>
+                            <div class="col-sm-9 col-lg-4 col-xs-12">
+                                <input type="text" name="repeat_notice" class="form-control" value="{$activity['repeat_notice']}" />
+                                <span class="help-block">周期已过，可以再补单的通知</span>
+                            </div>
+                        </div>
+                        <div class="form-group cycle_div">
+                            <label class="col-sm-2 control-label"><span class="text-danger">*</span>每月限制次数</label>
+                            <div class="col-sm-10">
+                                <div class="input-group col-sm-2 " >
+                                    <input type="text" name="month_num" value="<?php if(!empty($activity['month_num'])){ echo $activity['month_num'];}else{echo 0;}?>" class="form-control" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')">
+                                    <span class="input-group-addon">次</span>
+                                </div>
+                                <span class="help-block">每个月最多补单次数，0表示不限制</span>
+
+                            </div>
+
+                        </div>
+                        {if in_array($_W['uniacid'],array(21,1508,1687))}
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">可查看商品的会员等级</label>
+                            <div class="col-sm-9 col-xs-12">
+                                {loop $grade $key $item}
+                                <input type="checkbox" <?php if(in_array($item,$activity['member_grade']) ){echo "checked = 'checked'";}?> name="grade[]" value="{$item}">{$item}&nbsp;&nbsp;
+                                {/loop}
+                            </div>
+                        </div>
+                        {/if}
+
+                    </div>
+                </div>
+
+                <div class="goods_sort_box">
+                    <div class="div_total" onclick="showorhide(this,2)">
+                        <div class="div_top" >
+                            第三步：进入淘宝方式
+                        </div>
+                        <div class="div_right">
+                            <i class="fa fa-angle-double-up" aria-hidden="true"></i>
+                        </div>
+
+
+                    </div>
+                    <div style="padding:20px;display:none;" class="div_main">
+                            <!--2017-06-19 李 是否直接进入淘宝-->
+                            <div class='tao_div'>
+                                <div class="form-group">
+                                    <label class="col-xs-12 col-sm-3 col-md-2 control-label">触发类型</label>
+                                    <div class="col-sm-9 col-xs-12">
+                                        <input type="radio" value="1" onclick='taotype_show()' name="isdirectlyopen"
+                                               {if $activity['isdirectlyopen']=='1'}
+                                        checked=''
+                                        {/if}
+                                        {if !isset($activity["isdirectlyopen"])}
+                                        checked=""
+                                        {/if}
+                                        > 宝贝淘口令
+
+                                        {if in_array($_W['uniacid'],$search_array)}
+                                        <input type="radio" value="0" onclick='taotype_show()' name="isdirectlyopen"  class="isdirectlyopen_0" style="margin-left:10px;"
+                                               {if $activity['isdirectlyopen']=='0'}
+                                        checked=''
+                                        {/if}
+                                        > 搜索淘口令
+                                        {/if}
+
+                                        <?php
+                                    if(in_array($_W['uniacid'],$s_array)){
+                                 ?>
+                                        <input type="radio" value="2" onclick='taotype_show()' name="isdirectlyopen" style="margin-left:10px;"
+                                               {if $activity['isdirectlyopen']=='2'}
+                                        checked=''
+                                        {/if}
+                                        > 猜你喜欢流量入口
+                                        <?php
+                                 }
+                                 ?>
+
+                                        {if in_array($_W['uniacid'],$kw_array)}
+                                        <!--<input type="radio" value="3" onclick='taotype_show()' name="isdirectlyopen"  class="isdirectlyopen_3" style="margin-left:10px;" {if $activity['isdirectlyopen']=='3'}checked{/if}> 关键词卡首屏  -->
+                                        {/if}
+                                        <input type="radio" value="9" onclick='taotype_show()' name="isdirectlyopen"  class="isdirectlyopen_9" style="margin-left:10px;" {if $activity['isdirectlyopen']=='9'}checked{/if}> 关键词
+                                        {if in_array($_W['uniacid'],$ztc_array)}
+                                        <input type="radio" value="4" onclick='taotype_show()' name="isdirectlyopen"  class="isdirectlyopen_4" style="margin-left:10px;" {if $activity['isdirectlyopen']=='4'}checked{/if}> 直通车卡首屏
+                                        {/if}
+                                        <input type="radio" value="6" onclick='taotype_show()' name="isdirectlyopen"  class="isdirectlyopen_6" style="margin-left:10px;" {if $activity['isdirectlyopen']=='6'}checked{/if}> 淘宝群聊
+                                        <input type="radio" value="7" onclick='taotype_show()' name="isdirectlyopen"  class="isdirectlyopen_7" style="margin-left:10px;" {if $activity['isdirectlyopen']=='7'}checked{/if}> 已买的宝贝
+                                        <input type="radio" value="5" onclick='taotype_show()' name="isdirectlyopen"  class="isdirectlyopen_5" style="margin-left:10px;" {if $activity['isdirectlyopen']=='5'}checked{/if}> 自定义
+                                        {if $_GPC['test']==1}
+                                        <input type="radio" value="8" onclick='taotype_show()' name="isdirectlyopen"  class="isdirectlyopen_8" style="margin-left:10px;" {if $activity['isdirectlyopen']=='8'}checked{/if}> 自定义链接
+                                        {/if}
+
+
+                                    </div>
+                                </div>
+
+                                <!--淘口令对应显示的内容_start 2017-12-09-->
+                                <div class='form-group tao_set'>
+                                    <label class="col-xs-12 col-sm-3 col-md-2 control-label"></label>
+                                    <div class="col-sm-9 col-lg-4 col-xs-12" style='border:1px solid #dddddd;border-radius:5px;padding-top:10px;margin-left:15px'>
+                                        <div class='set_method'>
+                                            <div class="form-group">
+                                                <div class="col-sm-6 col-xs-12">
+                                                    <input type="radio" value="0" name="visit_method"  class="visit_method"  onclick='share_method_show()'  checked> 淘口令
+                                                    <input type="radio" value="1" name="visit_method"  class="visit_method"  onclick='share_method_show()'  style="margin-left:10px;" {if $activity['visit_method']=='1'}checked{/if}> 直接跳转
+                                                </div>
+                                            </div>
+                                            <div class="form-group set_share_method">
+                                                <div class="col-sm-6 col-xs-12">
+                                                    <input type="radio" value="0" name="share_method"  class="share_method"  checked> QQ
+                                                    <input type="radio" value="1" name="share_method"  class="share_method" style="margin-left:10px;" {if $activity['share_method']=='1'}checked{/if}> 微信
+                                                    <input type="radio" value="2" name="share_method"  class="share_method" style="margin-left:10px;" {if $activity['share_method']=='2'}checked{/if}> 其它
+                                                </div>
+                                            </div>
+
+
+                                        </div>
+                                        <div class="tao_er">
+                                            <div class="form-group">
+                                                <div class="col-sm-6 col-xs-12" id="customer_type">
+                                                    <input type="hidden" value="{$activity['tao_er_type']}" name="tao_er_type" id="tao_er_type">
+                                                    <input type="button" id="tao_er_all" value="无限制" onclick="tao_er(this,'tao_er_all')"  style="margin-left:10px;" {if $activity['tao_er_type']==1 } class="btn btn-success customer_type"  checked {else} class="btn btn-default customer_type"  {/if}>
+
+                                                    <input type="button" id="tao_er_old"  onclick="tao_er(this,'tao_er_old')" style="margin-left:10px;" value="老客户" {if $activity['tao_er_type']=='2'} checked class="btn btn-success customer_type"{else}class="btn btn-default customer_type"{/if} >
+
+                                                    <input type="button" id="tao_er_new"  onclick="tao_er(this,'tao_er_new')"  value="新客户"   {if $activity['tao_er_type']==2}class="btn btn-success customer_type" checked{else}class="btn btn-default customer_type"{/if}>
+                                                </div>
+                                            </div>
+                                            <div class="form-group tao_er_all" style="{if $activity['tao_er_type']!= 1}display: none;{/if}">
+                                                <label class="col-xs-12 col-sm-3 col-md-3 control-label">淘宝群聊二维码(<span style="color: red;">无限制</span>)</label>
+                                                <div class="col-sm-6 col-lg-8 col-xs-12">
+                                                    {php echo tpl_form_field_image('tao_er_all', $activity['tao_er_all'])}
+                                                </div>
+                                            </div>
+                                            <div class="form-group tao_er_old" style="{if $activity['tao_er_type']!= 2}display: none;{/if}">
+                                                <label class="col-xs-12 col-sm-3 col-md-3 control-label">淘宝群聊二维码(<span style="color: red;">老客户</span>)</label>
+                                                <div class="col-sm-6 col-lg-8 col-xs-12">
+                                                    {php echo tpl_form_field_image('tao_er_old', $activity['tao_er_old'])}
+                                                </div>
+                                            </div>
+                                            <div class="form-group tao_er_new" style="{if $activity['tao_er_type']!= 3}display: none;{/if}">
+                                                <label class="col-xs-12 col-sm-3 col-md-3 control-label">淘宝群聊二维码(<span style="color: red;">新客户</span>)</label>
+                                                <div class="col-sm-6 col-lg-8 col-xs-12">
+                                                    {php echo tpl_form_field_image('tao_er_new', $activity['tao_er_new'])}
+                                                </div>
+                                            </div>
+                                            <span style="color: red;font-weight: bold; font-size: 14px;" class="pull-right">无限制则不区分新老客户</span>
+                                        </div>
+                                        <script type="text/javascript">
+                                            function tao_er(obj,type){
+                                                $('#tao_er_all').removeClass('btn-success');
+                                                $('#tao_er_old').removeClass('btn-success');
+                                                $('#tao_er_new').removeClass('btn-success');
+                                                if(type == 'tao_er_old' || type =='tao_er_new'){
+                                                    $('#tao_er_type').val(2);
+                                                    $('#tao_er_old').addClass('btn-success');
+                                                    $('#tao_er_new').addClass('btn-success');
+                                                }else{
+                                                    $('#tao_er_type').val(1);
+                                                    $('#tao_er_all').addClass('btn-success');
+                                                }
+                                                $('.tao_er_all').hide();
+                                                $('.tao_er_old').hide();
+                                                $('.tao_er_new').hide();
+                                                $("."+type).show();
+                                            }
+                                        </script>
+
+                                        <!-- lu-关键词百分比 -->
+                                        <script>
+                                            $(function(){
+                                                $("input[name='keyPercentRand']").on('click',function(){
+                                                    if($("input[name='keyPercentRand']").val() == 1){
+                                                        $('.keyPercent').show();
+                                                        $('.baifen').show();
+                                                        $('.percent_show').show();
+                                                    }else{
+                                                        $('.keyPercent').hide();
+                                                        $('.baifen').hide();
+                                                        $('.percent_show').hide();
+                                                    }
+                                                })
+                                            })
+                                        </script>
+                                        <div class='set_keywords'>
+
+                                            <div class="keywords_set">
+                                                <div class="form-group import">
+                                                    <div class="col-sm-8 col-lg-8 col-xs-8">
+                                                        <input type="file" name="" class="form-control upfile" value=""/>
+                                                        <span class="help-block" style='margin-bottom:0px;'>只能导入csv格式文件,<a href="{php echo '/attachment/fileformat/keywords.csv'}">下载格式文件</a></span>
+                                                    </div>
+                                                    <div class="col-sm-2 col-lg-2 col-xs-2">
+                                                        <div class="input-group" >
+                                                            <span class="btn btn-info" onclick="keywords_import($(this).parents('.import').find('.upfile'),'taokeywords')">导入</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-group baifenSet">
+                                                    <div class="col-sm-6 col-xs-12">
+                                                        <input type="checkbox" value="{if $activity['keyPercentRand'] ==1 }1{else}0{/if}" {if $activity['keyPercentRand'] == 1}checked=checked{/if} onclick="javascript:this.value=this.checked?1:0" name="keyPercentRand">按百分比触发关键词
+
+                                                    </div>
+                                                </div>
+                                                <div class="form-group percent_show" {if $activity['keyPercentRand'] !=1}style='display:none'{/if}>
+                                                <div class="col-sm-8 col-lg-8 col-xs-8">
+                                                    百分比总和须为100 ， 已设置 <span class='percent_value' style='font-weight:bold;font-size:15px;color:red;'>100</span> %
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {loop $activity['key_content'] $key $item}
+                                        <div class="form-group taokeywords">
+                                            <div class="col-sm-8 col-lg-8 col-xs-8">
+                                                <div class="input-group" >
+                                                    <span class="input-group-addon">关键词</span>
+                                                    <input type="text" name="key_content[]" class="form-control taokeywords_value" value="{$item}"/>
+                                                    <span class="input-group-addon baifen" {if $activity['keyPercentRand'] != 1}style="display: none;"{/if}>百分比</span>
+                                                    <input type="text" name="keyPercent[]" {if $activity['keyPercentRand'] != 1}style="display: none;"{/if} class="form-control keyPercent" value="{$activity['keyPercent'][$key]}"  onkeyup="percent_show($('.set_keywords'))"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-2 col-lg-2 col-xs-2">
+                                                <div class="input-group taokeywords-btn" >
+                                                    {if $key==0}
+                                                    <span class="btn btn-primary" onclick="element_add($(this).parents('.set_keywords'),$('.taokeywords_con').html())">增加</span>
+                                                    {else}
+                                                    <span class="btn btn-primary" onclick="element_delete($(this).parents('.taokeywords'))">移除</span>
+                                                    {/if}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/loop}
+                                    </div>
+
+                                    <div class='set_tonghang' style='display:none'>
+                                        {loop $activity['key_link'] $key $item}
+                                        <div class="form-group tonghang">
+                                            <div class="col-sm-110 col-lg-10 col-xs-10">
+                                                <div class="input-group" >
+                                                    <span class="input-group-addon">同行</span>
+                                                    <input type="text" name="key_link[]" class="form-control" value="{$item}"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-2 col-lg-2 col-xs-2">
+                                                <div class="input-group" >
+                                                    {if $key==0}
+                                                    <span class="btn btn-primary" onclick="element_add($(this).parents('.set_tonghang'),$('.tonghang_con').html())">增加</span>
+                                                    {else}
+                                                    <span class="btn btn-primary" onclick="element_delete($(this).parents('.tonghang'))">移除</span>
+                                                    {/if}
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/loop}
+                                    </div>
+
+
+                                </div>
+
+                            </div>
+                            <!--淘口令对应显示的内容_end 2017-12-09-->
+
+                        </div>
+
+                        <!--淘口令-->
+                        <div class="form-group" id='taokouling_setting'>
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">淘口令</label>
+                            <div class="col-sm-9 col-lg-4 col-xs-12">
+                                <!--<input type="text"  name="taokouling" class="form-control" placeholder="请将淘口令粘贴到此处" value="{$activity['taokouling']}" />-->
+                                <textarea class="form-control" name="taokouling" rows="5" placeholder="请将淘口令粘贴到此处" style='resize:none;overflow:hidden'>{$activity['taokouling']}</textarea>
+                            </div>
+                        </div>
+                        <!--淘口令-->
+
+                        <!--自定义链接-->
+                        <div class="form-group taolink_set">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">链接</label>
+                            <div class="col-sm-9 col-lg-4 col-xs-12">
+                                <input type="text" name="taolink" class="form-control" value="{$activity['taolink']}"/>
+                            </div>
+                        </div>
+                        <!--自定义链接-->
+
+                        <!--京东跳转方式_start 2017-12-01-->
+                        <div class='jd_div'>
+                            <div class="form-group">
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label">跳转方式</label>
+                                <div class="col-sm-9 col-xs-12">
+                                    <input type="radio" value="0"  name='visittype' onclick="keywords_show()" checked /> 直接访问
+                                    <input type="radio" value="1"  name="visittype" onclick="keywords_show()" style='margin-left:10px' <?php echo $activity['visittype']==1?'checked':''; ?> /> 搜索关键词
+    
+                                </div>
+                            </div>
+
+                            <div class='form-group jd_set'>
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label"></label>
+                                <div class="col-sm-9 col-lg-3 col-xs-12" style='border:1px solid #dddddd;border-radius:5px;padding-top:10px;margin-left:15px'>
+                                    <div class='jd_set_keywords'>
+                                        <div class="form-group import">
+                                            <div class="col-sm-8 col-lg-8 col-xs-8">
+                                                <input type="file" name="" class="form-control upfile" value=""/>
+                                                <span class="help-block"  style='margin-bottom:0px;'>只能导入csv格式文件,<a href="{php echo '/attachment/fileformat/keywords.csv'}">下载格式文件</a></span>
+                                            </div>
+                                            <div class="col-sm-2 col-lg-2 col-xs-2">
+                                                <div class="input-group" >
+                                                    <span class="btn btn-info" onclick="keywords_import($(this).parents('.import').find('.upfile'),'jdkeywords')">导入</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {loop $activity['keywords'] $key $item}
+                                        <div class="form-group jdkeywords">
+                                            <div class="col-sm-8 col-lg-8 col-xs-8">
+                                                <div class="input-group" >
+                                                    <span class="input-group-addon">关键词</span>
+                                                    <input type="text" name="keywords[]" class="form-control jdkeywords_value" value="{$item}"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-3 col-lg-2 col-xs-3">
+                                                <div class="input-group taokeywords-btn" >
+                                                    {if $key==0}
+                                                    <input type="button" value="增加" class="btn btn-primary" onclick="element_add($(this).parents('.jd_set_keywords'),$('.jdkeywords_con').html())">
+                                                    {else}
+                                                    <input type="button" value="移除" class="btn btn-primary" onclick="element_delete($(this).parents('.jdkeywords'))">
+                                                    {/if}
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/loop}
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                        <!-- 京东跳转方式_end 2017-12-01-->
+
+
+                        <!--2017-06-19 李 是否直接进入淘宝-->
+                    </div>
+                </div>
+
+                <div class="goods_sort_box">
+                    <div class="div_total" onclick="showorhide(this,3)">
+                        <div class="div_top" >
+                            第四步：奖励设置
+                        </div>
+                        <div class="div_right">
+                            <i class="fa fa-angle-double-up" aria-hidden="true"></i>
+                        </div>
+
+
+                    </div>
+                    <div style="padding:20px;display:none;" class="div_main">
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>返现模式</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="radio" value="0" name="is_commission" {if $activity['is_commission'] == 0}checked{/if} > 本佣一次返
+                                <input type="radio" value="1" name="is_commission" style="margin-left:10px;" {if $activity['is_commission'] == 1}checked{/if} > 先返本后返佣
+                                <input type="radio" value="2" name="is_commission" style="margin-left:10px;" {if $activity['is_commission'] == 2}checked{/if} > 先返佣后返本
+                            </div>
+                        </div>
+                        <!--返现方式start-->
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>返现方式</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="radio" value="1" onclick='show_fanxian()' name="fanxiantype"
+                                       {if $activity['fanxiantype']=='1'}
+                                checked=''
+                                {/if}
+                                {if !isset($activity["fanxiantype"])}
+                                checked=""
+                                {/if}
+                                > 固定金额
+                                <input type="radio" value="0" onclick='show_percent()' name="fanxiantype" style="margin-left:10px;"
+                                       {if $activity['fanxiantype']=='0'}
+                                checked=''
+                                {/if}
+                                > 百分比
+                            </div>
+                        </div>
+                        <!--返现方式end-->
+
+
+                        <!--返现比例start-->
+                        <div class="form-group" id='fanxian_setting'>
+                            <label class="col-sm-2 control-label"><span class="text-danger">*</span>返现金额</label>
+                            <div class="col-sm-9 col-lg-5 col-xs-12">
+                                <div class="input-group  " >
+                                    <div class="input-group">
+                                        <input type="text" name="fanxian" id="fanxian" value="<?php if(!empty($activity['fanxian'])){ echo $activity['fanxian'];}else{echo 0;}?>" class="form-control" >
+                                        <span class="input-group-addon">元 + 佣金</span>
+                                        <input type="text" name="commision" value="<?php if(!empty($activity['commision'])){ echo $activity['commision'];}else{echo 0;}?>" class="form-control commision" >
+                                        <span class="input-group-addon">元</span>
+                                    </div>
+
+                                </div>
+                                <!--<span class="help-block">返现金额：<span id='fanxian_money'>{$activity['fanxian']}</span>元</span>-->
+                                <span class="help-block">最大返现额度请参照微信商户平台红包额度设置</span>
+
+                            </div>
+
+                        </div>
+                        <!--返现比例end-->
+
+                        <!--返现金额start-->
+                        <div class="form-group" id='percent_setting'>
+                            <label class="col-sm-2 control-label"><span class="text-danger">*</span>返现比例</label>
+                            <div class="col-sm-9 col-lg-5 col-xs-12">
+                                <div class="input-group col-sm-9 " >
+                                    <div class="input-group">
+                                        <input type="text" name="percent" id="percent" value="<?php if(!empty($activity['percent'])){ echo $activity['percent'];}else{echo 0;}?>" class="form-control" >
+                                        <span class="input-group-addon">% + 佣金</span>
+                                        <input type="text" name="commision" value="<?php if(!empty($activity['commision'])){ echo $activity['commision'];}else{echo 0;}?>" class="form-control commision" >
+                                        <span class="input-group-addon">元</span>
+                                    </div>
+
+                                </div>
+                                <!--<span class="help-block">返现金额：<span id='fanxian_money'>{$activity['fanxian']}</span>元</span>-->
+                                <span class="help-block">最大返现额度请参照微信商户平台红包额度设置</span>
+
+                            </div>
+
+                        </div>
+                        <!--返现金额end-->
+
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">设置多奖品</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="checkbox" id="more_prize" name="more_prize" onclick="javascript:this.value=this.checked?1:0" value="{$activity['more_prize']}" <?php if($activity['more_prize'] == 1){ ?> checked="true" <?php } ?>> 是
+                                <span class="help-block">提示：奖品分配数总和一定要为<b class="prize_num">{$activity['stock']}</b></span>
+                            </div>
+                        </div>
+
+                        {if $activity['more_prize'] == 1}
+                        <div class='form-group good_prize'>
+                            <div class="col-sm-12 col-lg-12 col-xs-12" >
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label"></label>
+                                <div class="col-sm-9 col-lg-6 col-xs-12">
+                                <span class="input-group " style="font-size: 16px;">
+                                    当前设置库存：<span style="color:red" id="now_prize_stock"></span>
+                                </span>
+                                </div>
+                            </div>
+
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">管理奖品</label>
+                            <div class="col-sm-9 col-lg-6 col-xs-12 prizeList" style='border:1px solid #dddddd;border-radius:5px;padding-top:10px;margin-left:15px'>
+                                {loop $activity['good_prize'] $index $row}
+                                <div class="form-group prizeRow">
+                                    <input type="hidden" name="good_prize_id[]" value="{$row['good_prize_id']}">
+                                    <!-- 奖品名称 -->
+                                    <div class="col-sm-4 col-lg-4 col-xs-4">
+                                        <div class="input-group">
+                                            <span class="input-group-addon">奖品名称</span>
+                                            <input type="text" name="prize_name[]"  value="{$row['prize_name']}" class="form-control prize_name">
+                                        </div>
+                                    </div>
+                                    <!-- 奖品库存 -->
+                                    <div class="col-sm-2 col-lg-2 col-xs-2">
+                                        <div class="input-group" style="width: 110px;">
+                                            <span class="input-group-addon">库存</span>
+                                            <input type="text" name="prize_stock[]" onchange="add_stock()" value="{$row['prize_stock']}" class="form-control prize_stock">
+                                        </div>
+                                    </div>
+                                    <!-- 订单备注 -->
+                                    <div class="col-sm-4 col-lg-4 col-xs-4">
+                                        <div class="input-group">
+                                            <span class="input-group-addon">订单备注</span>
+                                            <input type="text" name="prize_remark[]" class="form-control" value="{$row['prize_remark']}">
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-1 col-lg-1 col-xs-1">
+                                        <div class="input-group taokeywords-btn" >
+                                            {if $index == 0}
+                                            <input type="button" value="增加" class="btn btn-primary prizeBtn">
+                                            {else}
+                                            <input type="button" value="移除" class="btn btn-danger" onclick="prizeDel(this,{$row['good_prize_id']});">
+                                            {/if}
+                                        </div>
+                                    </div>
+
+                                </div>
+                                {/loop}
+                            </div>
+
+                        </div>
+                        {else}
+                        <div class='form-group good_prize' style="display: none;">
+                            <div class="col-sm-12 col-lg-12 col-xs-12" >
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label"></label>
+                                <div class="col-sm-9 col-lg-6 col-xs-12">
+                                <span class="input-group " style="font-size: 16px; margin-right: 25px;">
+                                    当前设置库存：<span style="color:red" id="now_prize_stock"></span>
+                                </span>
+                                </div>
+                            </div>
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">管理奖品</label>
+                            <div class="col-sm-9 col-lg-6 col-xs-12 prizeList" style='border:1px solid #dddddd;border-radius:5px;padding-top:10px;margin-left:15px'>
+                                <div class="form-group prizeRow">
+                                    <!-- 奖品名称 -->
+                                    <div class="col-sm-4 col-lg-4 col-xs-4">
+                                        <div class="input-group">
+                                            <span class="input-group-addon">奖品名称</span>
+                                            <input type="text" name="prize_name[]" class="form-control prize_name" >
+                                        </div>
+                                    </div>
+                                    <!-- 奖品库存 -->
+                                    <div class="col-sm-2 col-lg-2 col-xs-2">
+                                        <div class="input-group"  style="width: 110px;">
+                                            <span class="input-group-addon">库存</span>
+                                            <input type="text" name="prize_stock[]" onchange="add_stock()" class="form-control prize_stock">
+                                        </div>
+                                    </div>
+                                    <!-- 订单备注 -->
+                                    <div class="col-sm-4 col-lg-4 col-xs-4">
+                                        <div class="input-group">
+                                            <span class="input-group-addon">订单备注</span>
+                                            <input type="text" name="prize_remark[]" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-1 col-lg-1 col-xs-1">
+                                        <div class="input-group taokeywords-btn" >
+                                            <input type="button" value="增加" class="btn btn-primary prizeBtn">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {/if}
+                        <div class="help-block prize_prompt" style="margin-left: 17%;{if $activity['more_prize'] != 1} display: none; {/if}">提示：此功能是帮助拍A发B,C,D的商家管理赠品库存，赠品的总库存必须等于刷单库存总量。同时把这里设置的备注同步到淘宝或者京东后台（原有购物返利商品备注不在显示且 备注为空时不写备注到淘宝）</div>
+                        <div class="delPrizeId" style="display: none;"></div>
+
+                        <!-- =============================================================================================== -->
+                        <script type="text/javascript">
+                            $('#more_prize').change(function(){
+                                var v = $('#more_prize:checked').val();
+                                if(v == 1){
+                                    $('.good_prize').show();
+                                    $('.prize_prompt').show();
+                                }else{
+                                    $('.good_prize').hide();
+                                    $('.prize_prompt').hide();
+                                }
+                            });
+
+                            /* $('.goods_stock').change(function(){
+                             var goods_stock = $('.goods_stock').val();
+                             var goods_sales = $('.goods_sales').val();
+                             var prize = parseInt(goods_stock) - parseInt(goods_sales);
+                             $('.prize_num').text(prize);
+                             $('.prize_stock').val(0);
+                             });
+
+                             $('.goods_sales').change(function(){
+                             var goods_stock = $('.goods_stock').val();
+                             var goods_sales = $('.goods_sales').val();
+                             var prize = parseInt(goods_stock) - parseInt(goods_sales);
+                             $('.prize_num').text(prize);
+                             $('.prize_stock').val(0);
+                             });
+                             */
+                            $('.prizeBtn').click(function(){
+                                // var html = '<div class="form-group prizeRow"><div class="col-sm-5 col-lg-5 col-xs-5"><span class="input-group-addon">奖品名称</span><input type="text" name="prize_name[]" class="form-control" ></div><div class="col-sm-2 col-lg-2 col-xs-2"><div class="input-group"  style="width: 110px;"><span class="input-group-addon">分配</span><input type="text" name="prize_stock[]" class="form-control prize_stock"></div></div><div class="col-sm-1 col-lg-1 col-xs-1"><div class="input-group taokeywords-btn" ><input type="button" value="移除" class="btn btn-danger" onclick="prizeDel(this);"></div></div></div>';
+                                var html = '<div class="form-group prizeRow"><div class="col-sm-4 col-lg-4 col-xs-4"><div class="input-group"><span class="input-group-addon">奖品名称</span><input type="text" name="prize_name[]" class="form-control prize_name" ></div></div><div class="col-sm-2 col-lg-2 col-xs-2"><div class="input-group"  style="width: 110px;"><span class="input-group-addon">库存</span><input type="text" name="prize_stock[]" onchange="add_stock()" class="form-control prize_stock"></div></div><div class="col-sm-4 col-lg-4 col-xs-4"><div class="input-group"><span class="input-group-addon">订单备注</span><input type="text" name="prize_remark[]" class="form-control"></div></div><div class="col-sm-1 col-lg-1 col-xs-1"><div class="input-group taokeywords-btn" ><input type="button" value="移除" class="btn btn-danger" onclick="prizeDel(this,0);"></div></div></div>'
+                                $('.prizeList').append(html);
+                            });
+
+
+                            function prizeDel(obj,good_prize_id) {
+                                add_stock();
+                                $(obj).parent().parent().parent().remove();
+                                if(good_prize_id != 0){
+                                    var html = '<input type="hidden" name="del_prize_id[]" value="'+good_prize_id+'">';
+                                    $('.delPrizeId').append(html);
+                                }
+                            }
+                        </script>
+
+                    </div>
+                </div>
+
+                <div class="goods_sort_box">
+                    <div class="div_total" onclick="showorhide(this,4)">
+                        <div class="div_top" >
+                            第五步：其他设置
+                        </div>
+                        <div class="div_right">
+                            <i class="fa fa-angle-double-up" aria-hidden="true"></i>
+                        </div>
+
+
+                    </div>
+                    <div style="padding:20px;display:none;" class="div_main">
+                        <div class="form-group">
+                            <label class="col-xs-12 col-sm-3 col-md-2 control-label">是否备注</label>
+                            <div class="col-sm-9 col-xs-12">
+                                <input type="checkbox" value="1" onclick='check_ismemo()' name="ismemo" <?php echo $activity['ismemo']==1?'checked':''; ?> /> 是
+
+                            </div>
+                        </div>
+
+                        <div class='memo_div'>
+                            <div class="form-group">
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>交易备注</label>
+                                <div class="col-sm-9 col-lg-4 col-xs-12">
+                                    <textarea class="form-control" name="memo" rows="5" placeholder="要同步到淘宝交易的备注">{$activity['memo']}</textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label">交易备注旗帜</label>
+                                <div class="col-sm-9 col-xs-12">
+                                    <input type='radio' name='flag' value="0" class="flag" <?php echo $activity['flag']==0?'checked':''; ?> />
+                                    <img src="../addons/yunbei_fanli/images/flag/flag_0.png" />
+
+                                    <input type='radio' name='flag' value="1" class="flag" style="margin-left:10px" <?php echo $activity['flag']==1?'checked':''; ?> />
+                                    <img src="../addons/yunbei_fanli/images/flag/flag_1.png" />
+
+                                    <input type='radio' name='flag' value="2" class="flag" style="margin-left:10px" <?php echo $activity['flag']==2?'checked':''; ?> />
+                                    <img src="../addons/yunbei_fanli/images/flag/flag_2.png" />
+
+                                    <input type='radio' name='flag' value="3" class="flag" style="margin-left:10px" <?php echo $activity['flag']==3?'checked':''; ?> />
+                                    <img src="../addons/yunbei_fanli/images/flag/flag_3.png" />
+
+                                    <input type='radio' name='flag' value="4" class="flag" style="margin-left:10px" <?php echo $activity['flag']==4?'checked':''; ?> />
+                                    <img src="../addons/yunbei_fanli/images/flag/flag_4.png" />
+
+                                    <input type='radio' name='flag' value="5" class="flag" style="margin-left:10px" <?php echo $activity['flag']==5?'checked':''; ?> />
+                                    <img src="../addons/yunbei_fanli/images/flag/flag_5.png" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-xs-12 col-sm-3 col-md-2 control-label">开启用户填写备注</label>
+                                <div class="col-sm-9 col-xs-12">
+                                    <input type="checkbox" value="1" name="usermemo" <?php echo $activity['usermemo']==1?'checked':''; ?> /> 是
+                                    <span class="help-block">勾选后用户可以在手机端填写备注，填写的备注将一起同步到淘宝</span>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                
+               
+
+                <!--<div class="form-group">
+                    <label class="col-xs-12 col-sm-3 col-md-2 control-label"><span class="text-danger">*</span>是否自动匹配返利并上传好评截图</label>
+                    <div class="col-sm-9 col-xs-12">
+                        <input type="radio" value="1" name="auto_matching" {if $activity['auto_matching'] == 1}checked="true"{/if} > 是
+                        <input type="radio" value="0" name="auto_matching" style="margin-left:10px;" {if $activity['auto_matching'] == 0}checked="true"{/if} > 否
+                        <span class="help-block">提示：勾选后粉丝在淘宝下单后订单会自动匹配到系统，然后商家审核返本金，待粉丝确认收货后在微信端购物返利活动页面提交好评截图，商家审核后发放佣金</span>
+                    </div>
+                </div>-->
+               
+
+
+
+
+
+
+
+
+
+               
+               
+               <!-- <div class="form-group">
+                    <label class="col-xs-12 col-sm-3 col-md-2 control-label">活动详情</label>
+                    <div class="col-sm-9 col-xs-12">
+                         <input type="radio" value="0" name="desc" <?php if($activity['desc'] == '' || $activity['desc'] == '0'){ echo "checked";}?>  /> 关闭
+                         <input type="radio" value="1" name="desc" style="margin-left:10px;" <?php if($activity['desc'] == '1' ){ echo "checked";}?> /> 开启
+                    </div>
+                </div>
+                 -->
+
+
+
+                
+
+                
+                 <!-- ======================================================================================    -->
+
+
+                
+                
+
+                
+
+                
+
+
+                
+                
+                <!--获取当前有几个关键字-->
+                <input  type="hidden" id="k_n_gl" value='{if empty($count_gl)}0{else}{$count_gl}{/if}' />      
+                <!--获取当前有几个关键字-->    
+                <!--2017-06-22李-->
+                
+               <!--2017-06-22李-->
+               
+
+                
+
+                
+
+                <div class="form-group">
+                      <label class="col-xs-12 col-sm-3 col-md-2 control-label"></label>
+                      <div class="col-sm-9 col-lg-6 col-xs-12">
+                        <!--<input name="submit" type="submit" value="提交" onclick="return check_submit()" class="btn btn-primary col-lg-1">-->
+                      
+                      </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!--同行增加内容_start 2017-12-08-->
+<div class="tonghang_con" style='display:none'>
+    <div class="form-group tonghang">
+        <div class="col-sm-110 col-lg-10 col-xs-10">
+           <div class="input-group" > 
+               <span class="input-group-addon">同行</span>    
+               <input type="text" name="key_link[]" class="form-control" value="{$item}"/>
+            </div>
+        </div>
+        <div class="col-sm-2 col-lg-2 col-xs-2">
+            <div class="input-group" > 
+               <span class="btn btn-primary" onclick="element_delete($(this).parents('.tonghang'))">移除</span> 
+            </div>
+        </div>  
+    </div> 
+</div>
+<!--同行增加内容_end 2017-12-08-->   
+
+<!--淘宝关键词增加内容_start 2017-12-08-->
+<div class="taokeywords_con" style='display:none'>
+    <div class="form-group taokeywords">
+        <div class="col-sm-8 col-lg-8 col-xs-8">
+           <div class="input-group" > 
+               <span class="input-group-addon">关键词</span>    
+               <input type="text" name="key_content[]" class="form-control taokeywords_value" value=""/>
+               <span class="input-group-addon baifen" {if $activity['keyPercentRand'] != 1}style="display: none;"{/if}>百分比</span>    
+               <input type="text" name="keyPercent[]" {if $activity['keyPercentRand'] != 1}style="display: none;"{/if} class="form-control keyPercent"  onkeyup="percent_show($('.set_keywords'))"/>
+            </div>
+        </div>
+        <div class="col-sm-2 col-lg-2 col-xs-2">
+            <div class="input-group taokeywords-btn" > 
+               <span class="btn btn-primary" onclick="element_delete($(this).parents('.taokeywords'))">移除</span>    
+            </div>
+        </div>  
+     </div> 
+</div>
+<!--淘宝关键词增加内容_end 2017-12-08-->   
+
+<!--京东关键词增加内容_start 2017-12-01-->
+<div class='jdkeywords_con' style='display:none'> 
+    <div class="form-group jdkeywords"> 
+        <div class="col-sm-8 col-lg-8 col-xs-8">
+           <div class="input-group" > 
+               <span class="input-group-addon">关键词</span>    
+               <input type="text" name="keywords[]" class="form-control jdkeywords_value" value=""/>
+               <span class="input-group-addon baifen" {if $activity['keyPercentRand'] != 1}style="display: none;"{/if}>百分比</span>    
+               <input type="text" name="keyPercent[]" {if $activity['keyPercentRand'] != 1}style="display: none;"{/if} class="form-control keyPercent" value="{$activity['keyPercent'][$key]}"/>
+            </div>
+        </div>
+        <div class="col-sm-3 col-lg-2 col-xs-3">
+            <div class="input-group taokeywords-btn" > 
+              <input type="button" value="移除" class="btn btn-primary" onclick="element_delete($(this).parents('.jdkeywords'))"> 
+            </div>
+        </div>
+     </div> 
+</div>
+<!--京东关键词增加内容_end 2017-12-01-->
+
+<input type='hidden' name= "hide-uniacid" value="<?php echo $_W['uniacid']; ?>"/>
+<script>
+    //默认显示返现方式(返现金额或返现比例)
+    $(function(){
+        var val=$('input:radio[name="fanxiantype"]:checked').val();
+        if(val==1){
+            $('#fanxian_setting .commision').attr('name','commision');
+            $('#percent_setting .commision').attr('name','');
+            $('#percent_setting').hide();   
+        }else{
+            $('#percent_setting .commision').attr('name','commision');
+            $('#fanxian_setting .commision').attr('name','');
+            $('#fanxian_setting').hide();   
+        } 
+        
+
+        check_norepeat();  
+        check_ismemo();
+        
+        //jd_show(); // 2017-12-01
+        goodstype_show();  // 2017-12-11
+
+    });
+	
+	// 关键词导入
+	function keywords_import(fileobj,keywords_class)
+	{
+		if(fileobj.val()=='')
+		{
+			alert('请选择要导入的文件');
+			return false;
+		}
+		
+		var formData = new FormData();
+		formData.append("upfile",fileobj[0].files[0]);
+		
+		$.ajax({
+			url:"{php echo $this->createWebUrl('activity',array('foo'=>'keywords_import'))}",
+			type:'post',
+			dataType:'json',
+			data:formData,
+            contentType: false,    
+            processData: false,  //必须要  
+			success:function(data)
+			{
+				if(data.status==1)
+				{
+					// 删除关键词
+					$('form .'+keywords_class).not(':first').remove();
+					
+					// 显示导入的关键词
+					var keywords=data.keywords;
+					for(i=0;i<keywords.length;i++)
+					{
+					   if(i>0)
+					   {
+						   $('form .'+keywords_class).last().after($('.'+keywords_class+'_con').html());
+					   }
+					   $('form .'+keywords_class).eq(i).find('.'+keywords_class+'_value').val(keywords[i]);
+					}
+					
+					percent_show($('form .'+keywords_class).parent());
+				}
+				else
+				{
+					alert(data.msg);
+				}
+			}
+		})
+		
+	}
+	
+    // 已设置关键词百分比之和
+	function percent_show(obj)
+	{
+		var percent=0;
+		obj.find('.keyPercent').each(function(){
+			if($(this).val()>0)
+			{
+				percent+=parseInt($(this).val());
+			}
+		})
+		
+		$('.percent_value').text(percent);
+	}
+	
+	// 销量清零/恢复处理
+	function sales_change(obj)
+	{
+		if(obj.val()=='清零')
+		{
+			$(".sales").val(0);
+			$(".sales-show").text(0);
+			obj.val('恢复');
+			obj.attr('class','btn btn-primary');
+		}
+		else
+		{
+			$(".sales").val($(".sales").attr('data'));
+			$(".sales-show").text($(".sales").attr('data'));
+			obj.val('清零');
+			obj.attr('class','btn btn-danger'); 
+		}
+	}
+         
+    // 库存改变处理 2018-03-21
+	function stock_change(){
+		var goods_stock = parseInt($('.goods_stock').val());
+		
+		$('.prize_num').text(goods_stock);
+		$('.prize_stock').val(0);
+						
+		$('.sales_text').hide();
+	
+		/*if("{$is_jkc}"==1)
+		{
+			var taobaoid=$("input[name='good_id']").val();
+			$.ajax({
+				url:"{php echo $this->createWebUrl('activity',array('foo'=>'sales_count'))}",
+				type:'post',
+				dataType:'json',
+				data:{taobaoid:taobaoid},
+				success:function(res){
+					if(res.sales && res.sales>0)
+					{  
+					    if(goods_stock<res.sales)
+						{
+							alert('当前有'+res.sales+'人正在参与活动，您设置的库存不能少于'+res.sales+'件');
+						}
+					}
+				}
+			})
+		}*/
+		
+	}
+       
+    //展示固定金额div，隐藏百分比div
+    function show_fanxian(){
+        $('#fanxian_setting .commision').attr('name','commision');
+        $('#percent_setting .commision').attr('name','');
+        $('#fanxian_setting').show();
+        $('#percent_setting').hide();   
+    }
+    
+    //展示百分比div，隐藏固定金额div
+    function show_percent(){
+        $('#percent_setting .commision').attr('name','commision');
+        $('#fanxian_setting .commision').attr('name','');
+        $('#percent_setting').show();
+        $('#fanxian_setting').hide();                           
+    }
+
+    /* 增加_start 不允许重复补单处理 2017-07-10 */
+    function check_norepeat()
+    {  
+        if($("input[name=norepeat]").prop('checked'))
+        {    
+            $(".cycle_div").show();
+        }
+        else
+        {
+            $(".cycle_div").hide();
+        }
+    } 
+    /* 增加_end 不允许重复补单处理 2017-07-10 */
+    
+    /* 增加_start 是否备注 2017-07-15 */
+    function check_ismemo()
+    {  
+        if($("input[name=ismemo]").prop('checked'))
+        {    
+            $(".memo_div").show();
+        }
+        else
+        {
+            $(".memo_div").hide();
+        }
+    }
+    /* 增加_end 是否备注 2017-07-15 */
+
+    $(function(){
+        //返现百分比计算
+        //var $pay=$('#pay');
+        var $percent=$('#percent');
+        //var $fanxian_money=$('#fanxian_money');
+        
+        $('#percent').bind('input propertychange',function(){ 
+            var percent_val=$percent.val();
+            //判断百分比值是不是一个数字
+            if(percent_val!=''){
+                if(isNaN(percent_val) || percent_val<1 || percent_val>100){
+                    alert('请输入1到100之间的数字');  
+                    $percent.val('');                                       
+                }
+            }
+
+        }); 
+        
+        //不直接打开淘宝，隐藏关键词设置
+        /*var val=$('input:radio[name="isdirectlyopen"]:checked').val();
+        if(val==1){
+            $('#keyword_setting').hide();   
+        }else{
+            $('#taokouling_setting').hide();    
+        }
+        
+        $('#taokouling_setting').hide();    // 2017-11-23*/
+        
+        /*if($("input[name='hide-uniacid']").val() == 97777777){
+            
+            $('#add_click_gl_97').click(function(){
+            var k = parseInt($('#k_n_gl').val())+1;
+        //var str = $("#money_change").html();
+            var str ="<span class='span_sum_"+k+"'><br><br>关键词：<input class='money_stely m_big' k='0' type='text' name="+"key_content["+k+"]"+"  >    <span>限制次数：<input class='money_stely m_big' k='0' type='text' name="+"key_single_count["+k+"]"+"  ></span><a style='margin-left:10px;'  class='btn btn-danger ' onclick='yichu("+k+")'>移除</a></span>"; 
+            $("#money_change").append(str);
+            //$("#money_change").html(str);
+            $('#k_n_gl').val(k);
+            
+        })
+            
+        }else{  
+            
+        $('#add_click_gl').click(function(){
+            var k = parseInt($('#k_n_gl').val())+1;
+        //var str = $("#money_change").html();
+            var str ="<span class='span_sum_"+k+"'><br><br><input class='money_stely m_big' k='0' type='text' name="+"key_content["+k+"]"+"  >    <a style='margin-left:10px;'  class='btn btn-primary ' onclick='yichu("+k+")'>移除</a></span>"; 
+            $("#money_change").append(str);
+            //$("#money_change").html(str);
+            $('#k_n_gl').val(k);
+            
+        })  
+                
+    }*/
+        
+        $('#add_click_gl').click(function(){
+            var k = parseInt($('#k_n_gl').val())+1;
+        //var str = $("#money_change").html();
+            var str ="<span class='span_sum_"+k+"'><br><br><input class='money_stely m_big' k='0' type='text' name="+"key_content["+k+"]"+"  >    <a style='margin-left:10px;'  class='btn btn-primary ' onclick='yichu("+k+")'>移除</a></span>"; 
+            $("#money_change").append(str);
+            //$("#money_change").html(str);
+            $('#k_n_gl').val(k);
+            
+        })
+
+    });
+
+    //点击移除删除当前行
+    function yichu(k){
+        $(".span_sum_"+k).remove();
+    }       
+    
+    //点击直接打开淘宝(否)，隐藏关键字填写
+    function show_keyword(){
+        $('#keyword_setting').show();
+        $('#taokouling_setting').hide();    
+    }
+    
+    //点击直接打开淘宝(是)，显示关键字填写
+    function hide_keyword(){
+        $('#keyword_setting').hide();
+        // $('#taokouling_setting').show();    
+    }
+
+    $("input[name='url']").blur(function(){  
+        var url = $(this).val();
+        if(url != ''){
+            
+            goodstype_show(); // 2017-12-12
+
+            // $.ajax({ 
+            //     type:'post',
+            //     data:{ "url":url}, 
+            //     url:"{php echo $this->createWebUrl('ali')}",
+            //     dataType:'json',
+            //     success:function(data){
+            //         if(data.status == 200){
+            //             $("input[name='title']").val(data.title);
+            //         //var ddd = $("textarea[name='explain']").text(data.explain);
+            //             $("input[name='good_id']").val(data.good_id);
+
+            //             /* 增加_start 商品所属店铺 2017-07-13 */
+            //             $(".shopid option").each(function(){   
+            //                   $(this).prop("selected",false); 
+            //                   if($(this).text()==data.sellerNick)
+            //                   { 
+            //                       $(this).prop("selected",true); 
+            //                   }   
+            //              }) 
+            //              /* 增加_end 商品所属店铺 2017-07-13 */
+
+            //             //tu(data.img);
+                        
+            //             goodstype_show(); // 2017-12-12
+                        
+            //         }else{
+            //             /*2017-06-17*/
+            //             //alert(data.msg);
+            //             /*2017-06-17*/
+            //         }
+                
+            //     }
+                
+            // })
+            $.ajax({ 
+                type:'post',
+                data:{ "url":url}, 
+                url:"{php echo $this->createWebUrl('taobao')}",
+                dataType:'json',
+                success:function(res){
+                    if(res.stauts){
+                        var data = res.data;
+                        $("input[name='title']").val(data.title);
+                        $("input[name='good_id']").val(data.good_id);
+                        /* 增加_start 商品所属店铺 2017-07-13 */
+                        $(".shopid option").each(function(){   
+                              $(this).prop("selected",false); 
+                              if($(this).text()==data.sellerNick)
+                              { 
+                                  $(this).prop("selected",true); 
+                              }   
+                         }) 
+                         /* 增加_end 商品所属店铺 2017-07-13 */
+                        tu(data.img);
+                        goodstype_show(); // 2017-12-12
+                    }else{
+                        alert(res.msg);
+                    }
+                }
+                
+            }); 
+        }
+    })  
+    
+    function tu(url){
+        var times = Date.parse(new Date());
+        url = 'http:'+url;
+        
+        $.ajax({ 
+            url:"./index.php?c=utility&a=file&do=fetch&url="+url+"&time="+times,
+            dataType:'json',
+            success:function(data){
+                if(data.error == 1){
+                    //alert(data.message);
+                    return false;
+                }else{
+                    $('#zhutu').children('.input-group').children('.img-thumbnail').attr('src',data.url);
+                    $('input[name="thumb"]').val(data.attachment);
+                }
+                
+            }
+        }) 
+        
+    }
+        
+    // 不同平台商品相关内容显示  2017-12-09
+    function goodstype_show()
+    {
+        var shoptype=$("select[name='shopid'] option:selected").attr('shoptype');
+        var url=$("input[name='url']").val();
+        
+        if(shoptype==1 || url.indexOf('taobao.com')>0 || url.indexOf('tmall.com')>0 || url.indexOf('95095.com')>0)
+        {
+            $('.tao_div').show();
+            taotype_show();
+            
+            $('.jd_div').hide();
+        }
+        else if(shoptype==5 || url.indexOf('jd.com')>0)
+        {
+            $('.jd_div').show();
+            keywords_show();
+            
+            $('.tao_div').hide();
+        }
+        else
+        {   
+            $('.tao_div').hide();
+            $('.jd_div').hide();
+        }
+    }  
+
+    // 淘口令类型改变时处理  2017-12-08  
+    function taotype_show()
+    {   
+        $('.tao_set').show(); 
+        $('.set_method').hide();
+        $('.set_keywords').hide(); 
+        $('.baifenSet').hide();
+        $('.set_tonghang').hide();
+        $('.tao_er').hide();
+		$('#taokouling_setting').hide();
+		$('.taolink_set').hide();
+
+        var type=$("input[name='isdirectlyopen']:checked").val();
+        if(type==1 || type==2 || type==7){  
+            $('.set_method').show(); 
+        }else if(type==0 || type==3 || type==4 || type==9){
+            $('.set_method').show();
+            $(".set_keywords").show();
+            $(".baifenSet").show();
+            $('.keywords_set').show();
+            $('.import').show();
+			percent_show($('.set_keywords'));
+
+            if(type == 0 || type == 4){
+                if($("input[name=keyPercentRand]").prop("checked")){
+                    //显示百分比
+                    $('.percent_show').show();
+                    $('.baifen').show();
+                    $('.keyPercent').show();
+                }else{
+                    //隐藏百分比
+                    $('.percent_show').hide();
+                    $('.baifen').hide();
+                    $('.keyPercent').hide();
+                }
+            }
+
+            if(type==3)
+            {
+                $('.set_tonghang').show();
+            }
+            if(type==9){
+
+                $('.keyPercent').show();
+                $('.baifen').show();
+                $('.percent_show').show();
+
+                $('.import').hide();
+                $('.baifenSet').hide();
+                $('.set_method').hide();
+                //$('.keywords_set').hide();
+            }
+        }else if(type==5){
+            $('#taokouling_setting').show();
+			$('.tao_set').hide(); 
+        }else if ( type == 6  ) {
+            $('.tao_er').show();
+        }else if(type==8){
+            $('.taolink_set').show();
+			$('.tao_set').hide(); 
+        }else{
+            $('.tao_set').hide();  
+        }
+        
+        share_method_show();
+    }
+    
+    // 访问方式改变时处理 2017-12-12
+    function share_method_show()
+    {   
+        var type=$("input[name='isdirectlyopen']:checked").val();
+        var visit_method=$("input[name='visit_method']:checked").val();
+        if(visit_method==0 && type!=4 && type!=2 && type !=7)     
+        {
+            $('.set_share_method').show();
+        }
+        else
+        {
+            $('.set_share_method').hide();
+        }
+    }
+
+    // 元素增加 2017-12-08
+    function element_add(obj,html)
+    {
+        //$('.set_keywords').append($('.taokeywords_con').html());  
+        obj.append(html);
+		percent_show(obj);
+    }
+    
+    //元素删除  2017-12-09
+    function element_delete(obj)
+    {
+        obj.remove();
+		percent_show($('.set_keywords'));
+    }
+    
+    // 关键词增加 2017-12-01
+    function keywords_add() 
+    { 
+        $('.jd_set').append($('.keywords_con').html()); 
+    }
+    
+    // 关键词移除  2017-12-01
+    function keywords_delete(obj) 
+    { 
+        obj.remove();   
+    }
+    
+    //  京东相关内容显示   2017-12-01
+    function jd_show()
+    {   
+        var shoptype=$("select[name='shopid'] option:selected").attr('shoptype');
+        var url=$("input[name='url']").val();
+         
+        if(shoptype==5 || url.indexOf('jd.com')>0)
+        {
+            $('.jd_div').show();
+            keywords_show();
+            
+            $('.tao_div').hide();
+            $('#keyword_setting').hide();  
+        }
+        else
+        {
+            $('.jd_div').hide();
+        }
+        
+    }
+    
+    // 关键词显示处理  2017-12-01
+    function keywords_show()
+    {
+        if($("input[name='visittype']:checked").val()==1)
+        {
+            $('.jd_set').show();
+        }
+        else
+        {
+            $('.jd_set').hide();
+        }
+    }
+     //实时计算奖品设置数量
+    function add_stock(){
+        var prize_stock = 0;
+        $('.prize_stock').each(function(index, val) {
+            prize_stock+=parseInt($(this).val());
+        }); 
+        if(prize_stock){
+        	$('#now_prize_stock').text( prize_stock );
+        }
+    }
+    add_stock();
+    //实时计算商品设置数量 
+    function add_time_stock(){
+        var time_stock_num = 0;
+        $('.time_stock_num').each(function(index, val) {
+            time_stock_num+=parseInt($(this).val());
+        });
+        if(time_stock_num){ 
+	        $('#now_time_stock_num').text( time_stock_num );
+        }
+    }
+    add_time_stock();
+     
+    // 提交处理 2017-12-26
+    function check_submit(){
+
+        //判断按钮是否绿色
+        if($('input[name=submit]').attr('class') != 'btn btn-success btn-lg'){
+            alert('请把商品信息填写完整后再发布');
+            return false;
+        }
+
+        //多奖品提交判断
+        // var stock = $("input[name='stock']").val();
+        // if($('#more_prize').val()){
+        //     var prize_stock = 0;
+        //     var prize_name = '';
+        //     $('.prize_stock').each(function(index, val) {
+        //         prize_stock+=parseInt($(this).val());
+        //     });
+        //     $('.prize_name').each(function(index, val) {
+        //         if($(this).val()==''){
+        //             prize_name = 'no';
+        //         }
+        //     });
+        //     if(prize_name == 'no'){
+        //         alert('奖品名称不能为空!');
+        //         return false;
+        //     }
+        //     if( stock != prize_stock ){
+        //         alert('奖品数量总数必须设置为  '+ stock+' !');
+        //         return false;
+        //     }
+        // } 
+
+        var error=0;
+        var isdirectlyopen=$("input[name=isdirectlyopen]:checked").val();
+        if(isdirectlyopen==4)
+        {
+            // 获取关键词
+            var arr=[];
+            var i=0;
+            $('.taokeywords_value').each(function(){
+                 if($.trim($(this).val())!='')
+                 {  
+                    arr[i]= $.trim($(this).val());
+                    i++;
+                 }
+            })
+            
+            if(i==0)
+            {
+                alert('请设置关键词');
+                return false;
+            }
+            var keyword=arr[Math.floor(Math.random()*arr.length)];
+            var url=$('input[name=url]').val();
+             
+            // 生成淘口令
+            $.ajax({
+                url:"{php echo $this->createWebUrl('activity',array('foo'=>'check_zhitongche'))}",
+                type:'POST',
+                dataType:'json',
+                data:{'url':url,'keyword':keyword},
+                async: false, 
+                success:function(res){
+                    if(res.success==0)
+                    {
+                        alert(res.msg);
+                        error=1;
+                        return false;
+                    }
+                    
+                    if(res.tagsNumber<50)
+                    {
+                        alert('此链接权重比较低，可能不能卡在首位');
+                        error=1;
+                        return false;
+                    }
+                }
+                
+            })
+        }
+         
+        if(error == 1){
+            return false;   
+        }
+        
+        var flag = true; 
+        if( $("input[name='accordingTime']").val() == 1 ){
+            //判断分配的库存是否大于剩余的库存
+            var stockNumCount = 0;
+           $("input[name='stockNum[]']").each(function(a,b){
+            if( $(this).val() == '' || $(this).val() < 0 ){
+                alert('分配的库存不能为空');
+                flag = false;
+            }else{
+                stockNumCount += parseInt($(this).val())
+            }
+            })
+            //var stock     = $("input[name='stock']").val();
+           // var sales     = $("input[name='sales']").val();
+            //var lessStock =  parseInt(stock) - parseInt(sales);
+            var lessStock =  parseInt($("input[name='stock']").val());
+            if(stockNumCount > lessStock){
+                alert('分配的库存不能大于剩余的库存')
+                 flag = false;
+            }
+            //判断时间是否有交叉的时间
+            var timeSet = [];
+            $('.timestockHead').find("option:selected").each(function(a,b){
+                timeSet[a] = $(this).val()              
+            })
+            console.log(parseInt('09'))
+            var j = 0;
+            $.each(timeSet,function(i, val) {
+                if( i == 0 ){
+                    if(  parseInt(timeSet[i+2]) <  parseInt(timeSet[i]) ){
+                        alert('结束时间应该大于开始时间');
+                        flag = false;
+                        return false;
+
+                    }
+                    if( parseInt(timeSet[i+2]) == parseInt(timeSet[i]) && parseInt(timeSet[i+1]) >= parseInt(timeSet[i+3]) ){
+                        alert('结束时间应该大于开始时间');
+                        flag = false;
+                        return false;
+                    }
+                }
+                if( i%4 == 0 ){
+                    if( parseInt(timeSet[i+2]) < parseInt(timeSet[i]) ){
+                        alert('结束时间应该大于开始时间');
+                        flag = false;
+                        return false;
+                    }
+                    if( parseInt(timeSet[i+2]) == parseInt(timeSet[i]) && parseInt(timeSet[i+1]) >= parseInt(timeSet[i+3]) ){
+                        alert('结束时间应该大于开始时间');
+                        flag = false;
+                        return false;
+                    }
+                    if(parseInt(timeSet[i]) < parseInt(timeSet[i-2]) && parseInt(timeSet[i]) > parseInt(timeSet[i-4]) ){
+                        alert('不能出现交叉时间');
+                        flag = false;
+                        return false;
+                    }
+                    if(parseInt(timeSet[i]) == parseInt(timeSet[i-2]) && parseInt(timeSet[i+1]) < parseInt(timeSet[i-1]) ){
+                        alert('不能出现交叉时间');
+                        flag = false;
+                        return false;
+                    }
+                }
+            });
+        }
+        //lu--按百分比触发关键字--start
+        if($("input[name='isdirectlyopen']:checked").val() == 0 && flag ==true){
+            //判断关键词是否为空
+            $(".taokeywords_value:visible").each(function (index,domEle){
+                if($(this).val() == ''){
+                   alert('关键词不能为空'); 
+                   flag = false;
+                   return false;
+                }
+            })
+            //按百分比触发关键词判断
+            if($("input[name='keyPercentRand']").val() == 1 ){
+                if( flag == true ){
+                    var keyRand = 0 ;
+                    $(".keyPercent:visible").each(function (index,domEle){
+                         keyRand += parseInt($(this).val());
+                         if( keyRand <=0 || isNaN(keyRand) ){
+                            alert('百分比总和必须为大于等于0的数字');
+                            flag = false;
+                            return false;
+                         }
+                    });
+                    if(keyRand != 100 &&  flag == true ){
+                       alert('百分比总和必须等于100');
+                       flag = false; 
+                    }  
+                }       
+            }
+        }
+
+        if($("input[name='isdirectlyopen']:checked").val() == 9 && flag ==true){
+            //判断关键词是否为空
+            $(".taokeywords_value:visible").each(function (index,domEle){
+                if($(this).val() == ''){
+                    alert('关键词不能为空');
+                    flag = false;
+                    return false;
+                }
+            })
+            //按百分比触发关键词判断
+            if( flag == true ){
+                var keyRand = 0 ;
+                $(".keyPercent:visible").each(function (index,domEle){
+                    keyRand += parseInt($(this).val());
+                    if( keyRand <=0 || isNaN(keyRand) ){
+                        alert('百分比总和必须为大于等于0的数字');
+                        flag = false;
+                        return false;
+                    }
+                });
+                if(keyRand != 100 &&  flag == true ){
+                    alert('百分比总和必须等于100');
+                    flag = false;
+                }
+            }
+        }
+
+
+        //lu--按百分比触发关键字--end
+        return flag;
+    }
+
+    //按时间显示库存高级设置
+    function stock_height() {
+        var url = "{php echo $this->createWebUrl('stock_height_set',['id'=>$activity['id']])}";
+        parent.layer.open({ 
+          type: 2,
+          title: '按时间分配库存高级设置',
+          offset: ['10%','15%'],//位置参数1,=>距离顶部 参数2=>距离左边
+          shadeClose: true,//遮罩
+          area: ['80%', '79.5%'],
+          maxmin: true,
+          content: [url],//iframe的url，no代表不显示滚动条
+          zIndex: layer.zIndex,
+          success: function(layero){
+            // layer.setTop(layero);
+          }
+        });
+    }
+</script>
+{template 'common/footer'} 

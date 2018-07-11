@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+		<script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
+		<script src="https://cdn.bootcss.com/jquery/1.10.2/jquery.min.js"></script>
+		<!--<script type="text/javascript" src="js/index.js"></script>-->
+		<style type="text/css">
+			body{
+
+			}
+			ul{
+				list-style: none;
+			}
+			ul li{
+				width: 80px;
+				height: 50px;
+				line-height: 50px;
+				text-align: center;
+				display: inline-block;
+				cursor: pointer;
+				background: gray;
+			}
+			ul li a{
+				text-decoration: none;
+				color: white;
+			}
+			.nav{
+				width: 100%;
+				height: 50px;
+				position: fixed;
+			}
+			.pace{
+				width: 30px;
+				height: 50px;
+				right: 10px;
+				top: 80%;
+				position: fixed;
+				cursor: pointer;
+				background: #FF3366;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="nav">
+			<ul>
+				<li class="li1"><a href="javascript:void(0);" >首页</a></li>
+				<li class="li2"><a href="0620.html" onclick="click_scrol()">最新活动</a></li>
+				<li class="li3"><a href="test.html" onclick="click_scrol2()">店铺管理</a></li>
+				<li class="li4"><a href="javascript:void(0);" onclick="click_scrol3()">app下载</a></li>
+				<li class="li5"><a href="javascript:void(0);">关于我们</a></li>
+				<li class="li6"><a href="javascript:void(0);">联系我们</a></li>
+			</ul>
+			
+			
+		</div>
+		<div class="pace"></div>
+		<div id="aa" class="" style="width: 100%;height: 500px;border: 1px solid #000;">
+			<p>11111111</p>
+			<p>111111112222222</p>
+			<p>111111112222222333333</p>
+			<p>1111111122222223333334444444</p>
+			<p>111111112222222333333444444444444</p>
+		</div>
+		<div id="aaa" class="" style="width: 100%;height: 800px;border: 1px solid #006699;">			
+			<p>111111112222222333333444444444444</p>
+			<p>1111111122222223333334444444</p>
+			<p>111111112222222333333</p>
+			<p>111111112222222</p>			
+			<p>11111111</p>
+		</div>
+		<div id="aaaa" class="" style="width: 100%;height: 800px;border: 1px solid #0000FF;">
+			<p>11111111</p>
+			<p>111111112222222</p>
+			<p>111111112222222333333</p>
+			<p>1111111122222223333334444444</p>
+			<p>111111112222222333333444444444444</p>
+		</div>
+	</body>
+</html>
+
+<script type="text/javascript">
+	$(".li2").click = function(){
+		alert(1)
+		$.ajax({
+			url:"http://wx.jutaobao.cc/pingjia.php",    //请求的url地址
+			data:{"id":1},    //参数值
+			type:"POST",   //请求方式
+			success:function(req){
+				alert(req);
+			}
+		});
+	}
+	
+</script>
+
+<script type="text/javascript">
+//	function scrol(){
+		var time = $('#aaaa').offset().top;
+		var time2 = $(document).scrollTop();//获取滚动条的高度
+		//点击滑动
+		$('.li1').on('click',function(){
+			var time = $('#aaa').offset().top;
+			$('html').animate({scrollTop:time},800)
+		})
+		
+		
+		$('.pace').on('click',function(){
+			var pace = $('.pace').offset().top;
+//			console.log(pace)
+			$('html').animate({scrollTop:0},800)
+		})
+		
+		
+//		function scroll(){
+//			var time = $('#aaa').offset().top;
+//			$('body').animate({scrollTop:time},800)
+//			alert($('#aaa').offset().top)
+//		}
+		
+//		$('.li1').click(function(){
+//			var time = $('#aaa').offset().top;
+//			$('html').animate({scrollTop:time},800)
+////			alert(12)
+//		})
+		
+//		$(document).ready(function(){
+			
+//		})
+		
+		
+	
+//});
+		
+		
+		
+//		console.log(time2)
+		
+//		$('.li1').on('click',function(){
+//			var top = $('#aaa').offset().top;
+////			time2;
+//			alert(top)
+//		})
+		
+//	}
+//	scrol();
+//	document.body.scrollTop
+</script>

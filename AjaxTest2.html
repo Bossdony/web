@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>AjaxTest2</title>
+		<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+	</head>
+
+	<body>
+		<form id="form1" runat="server">
+			<div>
+				<input type="text" id="tbShow" />
+				<input type="button" id="btnGet" value="get方法" />
+				<input type="button" id="btnPost" value="post方法" />
+				<input type="button" id="btnAjax" value="ajax方法" />
+			</div>
+		</form>
+	</body>
+
+</html>
+<script type="text/javascript">
+	$(function() {
+		//参数：直接在页面之后加？拼加
+		$("#btnGet").click(function() {
+			$.get("js/aaa.aspx?time=" + new Date(), Succeed);
+		});
+
+		//参数：使用键值来表示需要传递的参数
+		$("#btnPost").click(function() {
+			$.post("js/aaa.aspx", {
+				time: new Date()
+			}, Succeed);
+		});
+	});
+
+	function Succeed(result) {
+		$("#tbShow").val(result);
+	}
+</script>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+	</head>
+
+	<body>
+		<!--<p><input type="button" onclick="XmlSendRequest();" value='Ajax请求' /></p>
+
+		<script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
+		<script>
+			function JqSendRequest() {
+				$.ajax({
+					url: "http://c2.com:8000/test/",
+					type: 'GET',
+					dataType: 'text',
+					success: function(data, statusText, xmlHttpRequest) {
+						console.log(data);
+					}
+				})
+			}
+		</script>-->
+		<script type="text/javascript">
+			$.ajax({ 
+				type: "get", 
+				url: "http://www.cnblogs.com/rss",
+				beforeSend: function(XMLHttpRequest){ //ShowLoading(); }, 
+				success: function(data, textStatus){ 
+					$(".ajax.ajaxResult").html(""); 
+					$("item",data).each(function(i, domEle){ 
+						$(".ajax.ajaxResult").append("<li>"+$(domEle).children("title").text()+"</li>"); 
+					});
+				}, 
+				complete: function(XMLHttpRequest, textStatus){ //HideLoading(); },
+				error: function(){ //请求出错处理 } });
+		</script>
+	</body>
+
+</html>
