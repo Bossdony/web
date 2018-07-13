@@ -156,6 +156,10 @@
 <script type="text/javascript">
 	$(function(){
 		$(document).ready(function(){
+			/*数据类型： 福利 | Android | iOS | 休息视频 | 拓展资源 | 前端 | all
+			http://gank.io/api/data/数据类型/请求个数/第几页
+			http://gank.io/api/data/福利/10/1 */
+
 			
 //			$.ajax({				
 //				url:"https://www.apiopen.top/satinApi?type=1&page=1",
@@ -210,6 +214,8 @@
 			
 			
 			//美图的url
+//			https://www.apiopen.top/meituApi?page=1
+//			page 指的是页数 最大29
 			$.ajax({
 				url:"https://www.apiopen.top/meituApi?page=1",
 				type:"post",
@@ -250,7 +256,7 @@
 			
 			//小说的url
 			$.ajax({
-//				url:"http://gank.io/api/data/福利/10/1",
+
 				url:"https://www.apiopen.top/novelApi",
 				type:"post",				
 //				data:Data,
