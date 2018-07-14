@@ -9,10 +9,10 @@
 </html>
 <script type="text/javascript">
 	//位置  yunbei_sy -> template -> bind ->785和821
-	//图片变大小，有代码重复，可简化
-	function bin(){
-		var d_width = $("#img_show").width();
-		var d_height = $("#img_show").height();
+	//图片改变大小，有代码重复，可简化
+	function bin(obj){
+		var d_width = $(obj).width();
+		var d_height = $(obj).height();
 		var img = $(this).children("img").attr("src");
 		/* 增加_start 七牛图片加宽高 2017-06-22 */
 		if(img.indexOf('?')>=0)
@@ -33,7 +33,113 @@
 		var imageWidth = theImage.width;
 		var imageHeight = theImage.height;
 	}
+	
 	//位置  yunbei_sy -> template -> bind ->633和885
 	//显示详情页代码重复，可删除一份
+	
+	//位置  yunbei_sy -> template -> activity-addgoods ->421和1290
+	//不允许重复刷单处理代码重复，可删除一份
+	
+	//位置  yunbei_sy -> template -> activity-addgoods ->625和1304
+	//是否备注代码重复，可删除一份
+	
+	//位置  yunbei_sy -> template -> activity-addgoods ->784和811
+	//require方法代码有重复，可简化
+	function over(obj){
+		$(obj).hover(function(){
+	        var obj = $(this);
+	        obj.popover({	
+	            'html':true,	
+	            'placement':'top',	
+	            'trigger':'manual',	
+	            //'title':title,	
+	            'content':'关键词次数总和需要等于试用人数'
+	        });
+	        obj.popover('show');
+	   }, function(){	
+	        $(this).popover('hide');	
+	    });
+	}
+	
+	//位置  yunbei_sy -> template -> activity-addgoods ->1995和1240
+	//提交处理代码有重复，可简化
+	function sub(){
+		$('.time_stock_set .timestock').each(function(i){
+	        $(this).find('.time_stock_start_hour').attr('name','time_stock['+i+'][start][hour]');
+	        $(this).find('.time_stock_start_minute').attr('name','time_stock['+i+'][start][minute]')
+	        $(this).find('.time_stock_end_hour').attr('name','time_stock['+i+'][end][hour]')
+	        $(this).find('.time_stock_end_minute').attr('name','time_stock['+i+'][end][minute]')
+	        $(this).find('.time_stock_num').attr('name','time_stock['+i+'][num]')
+	    });
+	}
+	
+	//位置 -> yunbei_nsy -> template -> qzlc -> 236
+	//inptu末尾中多了一个'"'，应删除
+	
+	//位置  yunbei_nsy -> template -> qzlc ->394和429
+	//图片改变大小，有代码重复，可简化
+	function big(obj){
+		var d_width = $(obj).width();
+		var d_height = $(obj).height();
+		var img = $(this).children("img").attr("src");
+		if(img.indexOf('?')>=0) {
+			img=img.substr(0,img.indexOf('?'))+'?imageView2/0/w/800/h/800/q/75|imageslim';
+		} else {
+			img=img+'?imageView2/0/w/800/h/800/q/75|imageslim';
+		}
+		var theImage = new Image();
+		theImage.src =img;
+		var imageWidth = theImage.width;
+		var imageHeight = theImage.height;
+	}
+	
+	//位置 -> yunbei_nsy -> template -> task_verify -> 233
+	//inptu末尾中多了一个'"'，应删除
+	
+	//位置  yunbei_nsy -> template -> task_verify ->388和423
+	//图片变大小，有代码重复，可简化
+	function big(obj){
+		var d_width = $(obj).width();
+		var d_height = $(obj).height();
+		var img = $(this).children("img").attr("src");
+		if(img.indexOf('?')>=0) {
+			img=img.substr(0,img.indexOf('?'))+'?imageView2/0/w/800/h/800/q/75|imageslim';
+		} else {
+			img=img+'?imageView2/0/w/800/h/800/q/75|imageslim';
+		}
+		var theImage = new Image();
+		theImage.src =img;
+		var imageWidth = theImage.width;
+		var imageHeight = theImage.height;
+	}
+	
+	//位置 -> yunbei_fanli -> bind ->793和1065
+	//显示详情页代码有重复，可简化    注意其中的opacity和$.ajax()的内容
+	
+	//位置 -> yunbei_fanli -> bind ->966和1005
+	//图片改变大小，代码有重复，可简化
+	function big(obj){
+		var d_width = $(obj).width();
+		var d_height = $(obj).height();
+		var img = $(this).children("img").attr("src");
+		/* 增加_start 七牛图片加宽高 2017-06-22 */
+		if(img.indexOf('?')>=0)
+		{
+			img=img.substr(0,img.indexOf('?'))+'?imageView2/0/w/800/h/800/q/75|imageslim';
+		}
+		else
+		{
+			img=img+'?imageView2/0/w/800/h/800/q/75|imageslim';
+		}
+        /* 增加_end 七牛图片加宽高 2017-06-22 */
+		
+		var theImage = new Image();
+		theImage.src =img;
+		
+		// Get accurate measurements from that.
+		var imageWidth = theImage.width;
+		var imageHeight = theImage.height;
+	}
+	
 </script>
 		
