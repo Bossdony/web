@@ -13,10 +13,7 @@
 				font-size: 16px;
 			}*/
 			/*img{
-				width: 250px;
-				height: 350px;
-				float: left;
-				margin: 5px;
+				
 			}*/
 			.boo{
 				width: 100%;
@@ -109,9 +106,25 @@
 				color: white;
 				font-size: 20px;
 			}
+			.ul {
+				
+			}
+			.ul-li{
+				list-style: none;
+				float: left;
+				margin: 5px;
+				border: 1px solid #000;
+			}
+			.li-img{
+				width: 250px;
+				height: 350px;
+				display: block;
+				margin: 5px;
+			}	
 		</style>
 	</head>
-	<body>		
+	<body>
+		<ul class="ul"></ul>
         <!--<div class="book">
         	<div class="book_images"><img class="book_img" src=""/></div>        	
         	<div class="book_mian">
@@ -151,11 +164,13 @@
     			</table>
         	</div>
         </div>
+        
+        <!--<textarea style="height:300px;" class="richtext-clone" name="rule"></textarea>  文本编辑器 -> editor插件-->
 	</body>
 </html>
 <script type="text/javascript">
 	$(function(){
-		$(document).ready(function(){
+		$(document).ready(function(){		
 			/*数据类型： 福利 | Android | iOS | 休息视频 | 拓展资源 | 前端 | all
 			http://gank.io/api/data/数据类型/请求个数/第几页
 			http://gank.io/api/data/福利/10/1 */
@@ -297,8 +312,10 @@
 				success:function(data){
 					var data = data.data;
 					for(var i=0;i<data.length;i++){
-						var div ='<li>'+
+						var div ='<li class="ul-li">'+
+									'<img class="li-img" src="'+data.img+'" />'+
 									'</li>';
+					$('.ul').append(div);
 					}
 				}
 			})
