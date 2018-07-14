@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+	</head>
+	<body>
+	</body>
+</html>
+<script type="text/javascript">
+	//位置  yunbei_sy -> template -> bind ->785和821
+	//图片变大小，有代码重复，可简化
+	function bin(){
+		var d_width = $("#img_show").width();
+		var d_height = $("#img_show").height();
+		var img = $(this).children("img").attr("src");
+		/* 增加_start 七牛图片加宽高 2017-06-22 */
+		if(img.indexOf('?')>=0)
+		{
+			img=img.substr(0,img.indexOf('?'))+'?imageView2/0/w/800/h/800/q/75|imageslim';
+		}
+		else
+		{
+			img=img+'?imageView2/0/w/800/h/800/q/75|imageslim';
+		}
+        /* 增加_end 七牛图片加宽高 2017-06-22 */
+
+		// Create new offscreen image to test
+		var theImage = new Image();
+		theImage.src =img;
+		
+		// Get accurate measurements from that.
+		var imageWidth = theImage.width;
+		var imageHeight = theImage.height;
+	}
+	//位置  yunbei_sy -> template -> bind ->633和885
+	//显示详情页代码重复，可删除一份
+</script>
+		

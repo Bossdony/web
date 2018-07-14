@@ -1,0 +1,17 @@
+createTextRange()  来创建Range对象操作文本;要操作的文本就具有了对象的功能和特性了
+setSelectionRange()  聚焦并使光标位置在文字最后
+focus()  焦点
+blur()  失去焦点
+indexOf()  返回0或-1 (有,就返回0;没有,就返回-1) 注:对大小写敏感
+
+eq()  将匹配元素集缩减值指定 index 上的一个
+each()  能使DOM循环结构简洁，不容易出错,遍历一维数组、多维数组、DOM, JSON 等等
+find()  通过一个选择器，jQuery的对象，或元素过滤，得到当前匹配的元素集合中每个元素的后代
+a => entry  function(a){
+		return entry;
+	}
+	
+class/id ^=''  class/id属性以什么开 
+$.trim()  去除字符串两端的空白字符
+modal 模拟框Bootstrap插件
+childNodes  返回节点的子节点集合

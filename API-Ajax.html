@@ -289,6 +289,19 @@
 					}										
 				}				
 			})
+			
+			$.ajax({
+				url:"http://gank.io/api/data/福利/10/1",
+				type:"post",
+				dataType:"json",
+				success:function(data){
+					var data = data.data;
+					for(var i=0;i<data.length;i++){
+						var div ='<li>'+
+									'</li>';
+					}
+				}
+			})
 		})		
 	})
 </script>
