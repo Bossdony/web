@@ -174,6 +174,12 @@
 			/*数据类型： 福利 | Android | iOS | 休息视频 | 拓展资源 | 前端 | all
 			http://gank.io/api/data/数据类型/请求个数/第几页
 			http://gank.io/api/data/福利/10/1 */
+			/*type=1 : 全部, type=2 : 文字, type=3 : 图片, type=4 : 视频, page=1:页码
+			当page=0时，会随机返回一页数据，page>=1时会返回相应页码的数据，图片包含GIF，is_gif 字段判断
+			type=1 : 全部 , type=41 : 视频 , type=10 : 图片 , type=29 : 段子 , type=31 : 声音
+			https://www.apiopen.top/satinApi?type=1&page=1 */
+
+
 
 			
 //			$.ajax({				
@@ -232,7 +238,7 @@
 //			https://www.apiopen.top/meituApi?page=1
 //			page 指的是页数 最大29
 			$.ajax({
-				url:"https://www.apiopen.top/meituApi?page=1",
+				url:"https://www.apiopen.top/meituApi?page=2",
 				type:"post",
 				async:false,
 				dataType:"json",
@@ -242,23 +248,23 @@
 					var h3 = '<h3>'+data[0].type+'</h3>';
 										
 //					console.log();					
-//					for(var i=0;i<data.length;i++){
-//						//时间戳的转换
-//						var time = new Date(data[i].publishedAt).getTime();
-//						var time1 = new Date(time);
-//						var time2 = time1.toLocaleDateString().replace(/\//g, "-") + " " + time1.toTimeString().substr(0, 8);
-////						console.log(time2);						
-//						
-//						var div =
-////						        	'<div class="image">'+'<h3>'+data[0].type+'</h3>'+
-//						        	'<div class="image_img">'+
-//						        	'<img src="'+data[i].url+'" />'+
-//						        	'<p>上传时间:&nbsp;&nbsp;'+time2+'</p>'+
-////						        	'</div>'+
-//						        	'</div>';
+					for(var i=0;i<data.length;i++){
+						//时间戳的转换
+						var time = new Date(data[i].publishedAt).getTime();
+						var time1 = new Date(time);
+						var time2 = time1.toLocaleDateString().replace(/\//g, "-") + " " + time1.toTimeString().substr(0, 8);
+//						console.log(time2);						
+						
+						var div =
+//						        	'<div class="image">'+'<h3>'+data[0].type+'</h3>'+
+						        	'<div class="image_img">'+
+						        	'<img src="'+data[i].url+'" />'+
+						        	'<p>上传时间:&nbsp;&nbsp;'+time2+'</p>'+
+//						        	'</div>'+
+						        	'</div>';
 //						$('.image').append(div);
-//					}
-//					//在指定的div后添加内容
+					}
+					//在指定的div后添加内容
 //					$(h3).insertBefore(".image");
 				}
 			})
@@ -271,7 +277,6 @@
 			
 			//小说的url
 			$.ajax({
-
 				url:"https://www.apiopen.top/novelApi",
 				type:"post",				
 //				data:Data,
@@ -307,15 +312,16 @@
 			
 			$.ajax({
 				url:"http://gank.io/api/data/福利/10/1",
-				type:"post",
+				type:"get",
 				dataType:"json",
 				success:function(data){
-					var data = data.data;
+					console.log(data.results);
+					var data = data.results;
 					for(var i=0;i<data.length;i++){
 						var div ='<li class="ul-li">'+
-									'<img class="li-img" src="'+data.img+'" />'+
+									'<img class="li-img" src="'+data[i].url+'" />'+
 									'</li>';
-					$('.ul').append(div);
+//					$('.ul').append(div);
 					}
 				}
 			})

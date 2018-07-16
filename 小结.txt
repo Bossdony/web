@@ -1,3 +1,22 @@
+
+前端特效整理
+	https://blog.csdn.net/m0_37809478/article/details/76619207
+js,jquery,css,html5特效
+	https://www.cnblogs.com/Jeremy2001/p/6089343.html
+
+手机端的自适应
+name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+width=device-width  表示可视区域的宽度为设备宽度（手机或pc）
+initial-scale=1.0  表示页面首次被显示时，按实际尺寸显示，无任何缩放（没加这个代码前，在移动端文字变小了就是因为被缩放了）
+user-scalable: no;  禁止用户缩放页面
+maximum-scale=1.0, minimum-scale=1.0; 可视区域的最大和最小缩放级别都为实际尺寸，
+
+
+
+
+
+
+
 createTextRange()  来创建Range对象操作文本;要操作的文本就具有了对象的功能和特性了
 setSelectionRange()  聚焦并使光标位置在文字最后
 focus()  焦点
